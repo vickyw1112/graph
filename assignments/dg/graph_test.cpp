@@ -8,7 +8,29 @@
 
 */
 
+#include <iostream>
+
 #include "assignments/dg/graph.h"
 #include "catch.h"
 
-// TODO(students): Fill this in.
+SCENARIO("Construct simple graphs") {
+  GIVEN("Empty graph g with int nodes/edges") {
+    gdwg::Graph<int, int> g;
+    WHEN("Insert node 1") {
+      REQUIRE(g.InsertNode(1));
+      THEN("g.IsNode(1) should return true") {
+        REQUIRE(g.IsNode(1));
+      }
+      THEN("g.IsNode(2) should return false") {
+        REQUIRE(!g.IsNode(2));
+      }
+    }
+    WHEN("Insert node 1 twice") {
+      THEN("second time should return false") {
+        REQUIRE(g.InsertNode(1));
+        REQUIRE(g.IsNode(1));
+        REQUIRE(!g.InsertNode(1));
+      }
+    }
+  }
+}
