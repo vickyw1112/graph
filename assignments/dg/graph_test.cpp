@@ -33,4 +33,45 @@ SCENARIO("Construct simple graphs") {
       }
     }
   }
+
+  GIVEN("a list of char nodes") {
+    gdwg::Graph<char, std::string> g{'a', 'b', 'x', 'y'};
+    THEN("node 'a' should be a node"){
+      REQUIRE(g.IsNode('a'));
+    }
+  }
+  GIVEN("a list of string nodes") {
+    std::vector<std::string> v{"hello", "haha"};
+    gdwg::Graph<std::string, int> g{v.cbegin(), v.cend()};
+    THEN("node 'hello' should be a node"){
+      REQUIRE(g.IsNode("hello"));
+    }
+  }
+  GIVEN("auto list of nodes with weight"){
+    std::string s1{"Hello"};
+    std::string s2{"how"};
+    std::string s3{"are"};
+    auto e1 = std::make_tuple(s1, s2, 5.4);
+    auto e2 = std::make_tuple(s2, s3, 7.6);
+    auto e = std::vector<std::tuple<std::string, std::string, double>>{e1, e2};
+    gdwg::Graph<std::string, double> b{e.begin(), e.end()};
+    THEN("should have connection between s1 and s2, s2 and s3"){
+      REQUIRE(b.IsNode("Hello"));
+      REQUIRE(b.IsNode("how"));
+      REQUIRE(!b.IsNode("hehe"));
+      REQUIRE(b.IsConnected("Hello", "how"));
+      REQUIRE(b.IsConnected("how", "are"));
+    }
+    WHEN("insert edge 3 between hello and how"){
+      THEN("connection exists"){
+        REQUIRE(b.InsertEdge("Hello", "how", 3));
+      }
+    }
+    WHEN("insert an exists connection"){
+      b.InsertEdge("Hello", "how", 3);
+      THEN("fail"){
+        REQUIRE(!b.InsertEdge("Hello", "how", 3));
+      }
+    }
+  }
 }
