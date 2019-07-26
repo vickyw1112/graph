@@ -1,70 +1,73 @@
 #ifndef ASSIGNMENTS_DG_GRAPH_H_
 #define ASSIGNMENTS_DG_GRAPH_H_
 
+#include <iostream>
 #include <map>
 #include <memory>
 #include <set>
 #include <utility>
 #include <vector>
-#include <iostream>
 
 namespace gdwg {
 
-template <typename N, typename E>
-class Graph {
- public:
+template <typename N, typename E> class Graph {
+public:
   using Edge = std::tuple<N, N, E>;
-  // ====================================CONSTRUCTOR================================================
+
+  /* ===== Constructors ===== */
   Graph() = default;
 
-  // iterator constructor
-  Graph(typename std::vector<N>::const_iterator start, typename std::vector<N>::const_iterator end);
+  /* node iterator constructor */
+  Graph(typename std::vector<N>::const_iterator start,
+        typename std::vector<N>::const_iterator end);
 
-  // tuple
-  Graph(typename std::vector<Edge>::const_iterator start, typename std::vector<Edge>::const_iterator end);
+  /* edge iterator constructor */
+  Graph(typename std::vector<Edge>::const_iterator start,
+        typename std::vector<Edge>::const_iterator end);
 
-  // init list
+  /* node initializer_list constructor */
   Graph(std::initializer_list<N> list);
 
-  // copy constructor
-  Graph(const gdwg::Graph<N, E>& old);
+  /* copy constructor */
+  Graph(const gdwg::Graph<N, E> &old);
 
-  // move constructor
-  Graph(const gdwg::Graph<N, E>&& old);
+  /* move constructor */
+  // TODO make it default?
+  Graph(const gdwg::Graph<N, E> &&old);
 
-  // destructor
   ~Graph() = default;
-  // ====================================METHOD================================================
-  bool InsertNode(const N& node);
 
-  bool IsNode(const N& val) {
-    // std::unique_ptr<N> temp = std::make_unique<N>(val);
-    return nodes_.find(val) != nodes_.end();
-  }
+  /* ===== Methods ===== */
+  // TODO check const correctness
+  bool InsertNode(const N &node);
 
-  bool InsertEdge(const N& src, const N& dst, const E& w);
+  bool IsNode(const N &val) const { return nodes_.find(val) != nodes_.end(); }
 
-  bool IsConnected(const N& src, const N& dst);
+  bool InsertEdge(const N &src, const N &dst, const E &w);
 
-  std::vector<E> GetWeights(const N& src, const N& dst);
+  bool IsConnected(const N &src, const N &dst) const;
 
-  std::vector<N> GetConnected(const N& src);
+  std::vector<E> GetWeights(const N &src, const N &dst) const;
 
-  std::vector<N> GetNodes();
+  std::vector<N> GetConnected(const N &src) const;
 
-  bool DeleteNode(const N& node);
+  std::vector<N> GetNodes() const;
 
-  bool Replace(const N& oldData, const N& newData);
+  bool DeleteNode(const N &node);
 
-  void MergeReplace(const N& oldData, const N& newData);
+  bool Replace(const N &oldData, const N &newData);
 
- private:
+  void MergeReplace(const N &oldData, const N &newData);
 
-  // if node exists, return raw pointer
-  // else make unique ptr then return raw pointer
-  N* getNode(const N& val){
-    N* temp;
-    if(!IsNode(val)){
+private:
+  /**
+   * if node exists, return raw pointer to it
+   * else make unique ptr, put it to node set
+   * then return raw pointer
+   */
+  N *GetNode(const N &val) {
+    N *temp;
+    if (!IsNode(val)) {
       std::unique_ptr<N> node = std::make_unique<N>(val);
       temp = node.get();
       this->connections_[node.get()] = {};
@@ -76,102 +79,72 @@ class Graph {
     return temp;
   }
 
-  using Connection = std::pair<N*, E*>;
+  using Connection = std::pair<N *, E *>;
 
-  struct UniquePointerNodeCompare {
-    bool operator()(const std::unique_ptr<N>& lhs, const std::unique_ptr<N>& rhs) const {
-        return *lhs < *rhs;
-    }
-    /* for set transparent comparison */
-    bool operator()(const N& lhs, const std::unique_ptr<N>& rhs) const {
-        return lhs < *rhs;
-    }
-    bool operator()(const std::unique_ptr<N>& lhs, const N& rhs) const {
-        return *lhs < rhs;
-    }
-    using is_transparent = const N&;
-  };
+  /**
+   * Comapre functors
+   */
+  struct UniquePointerNodeCompare;
+  struct PointerNodeCompare;
+  struct UniquePointerEdgeCompare;
+  struct ConnectionCompare;
 
-  struct PointerNodeCompare {
-    bool operator()(const N* lhs, const N* rhs) const {
-      return *lhs < *rhs;
-    }
-  };
+  /**
+   * Graph attributes
+   */
 
-  struct UniquePointerEdgeCompare {
-    bool operator()(const std::unique_ptr<E>& lhs, const std::unique_ptr<E>& rhs) const {
-      return *lhs < *rhs;
-    }
-    /* for set transparent comparison */
-    bool operator()(const E& lhs, const std::unique_ptr<E>& rhs) const {
-      return lhs < *rhs;
-    }
-    bool operator()(const std::unique_ptr<E>& lhs, const E& rhs) const {
-      return *lhs < rhs;
-    }
-    using is_transparent = const E&;
-  };
-
-  struct ConnectionCompare{
-    bool operator()(const Connection& lhs, const Connection& rhs) const {
-      return (*(lhs.first) != *(rhs.first)) ?
-          *(lhs.first) < *(rhs.first) : *(lhs.second) < *(rhs.second);
-    }
-
-    bool operator()(const Connection& lhs, const std::pair<N, E>& rhs) const {
-      return (*(lhs.first) != rhs.first) ?
-             *(lhs.first) < rhs.first : *(lhs.second) < rhs.second;
-    }
-
-    bool operator()(const std::pair<N, E>& lhs, const Connection& rhs) const {
-      return (lhs.first != *(rhs.first)) ?
-             lhs.first < *(rhs.first) : lhs.second < *(rhs.second);
-    }
-
-    /* for checking if connection to a specific node exists */
-    bool operator()(const Connection& lhs, const N& rhs) const {
-      return *(lhs.first) < rhs;
-    }
-
-    bool operator()(const N& lhs, const Connection& rhs) const {
-      return lhs < *(rhs.first);
-    }
-
-    using is_transparent = const N&;
-  };
+  /* set of all unique pointer to nodes */
   std::set<std::unique_ptr<N>, UniquePointerNodeCompare> nodes_;
+  /* set of all unique pointer to edges */
   std::set<std::unique_ptr<E>, UniquePointerEdgeCompare> edges_;
-  std::map<N*, std::set<Connection, ConnectionCompare>, PointerNodeCompare> connections_;
+  /* map to represent adjacency list that uses raw pointers */
+  std::map<N *, std::set<Connection, ConnectionCompare>, PointerNodeCompare>
+      connections_;
 
- public:
-
+public:
   class const_iterator {
-   private:
-    Graph& g_;
+  private:
+    /* ref to graph */
+    Graph &g_;
+    /* current iterator position for connections_ map */
+    typename std::map<N *, std::set<Connection, ConnectionCompare>,
+                      PointerNodeCompare>::const_iterator map_it_;
+    /* current iterator position for the connections set which is 
+     * value of connections_ map */
+    typename std::set<Connection, ConnectionCompare>::const_iterator
+        connection_it_;
+    /* we use cend of this empty set as a special value for connection_it_ */
     std::set<Connection, ConnectionCompare> emptyConnection_;
-    typename std::map<N*, std::set<Connection, ConnectionCompare>, PointerNodeCompare>::const_iterator map_it_;
-    typename std::set<Connection, ConnectionCompare>::const_iterator connection_it_;
 
-   public:
+  public:
     using iterator_category = std::bidirectional_iterator_tag;
     using value_type = std::tuple<N, N, E>;
-    using reference = const std::tuple<const N&, const N&, const E&>;
+    using reference = const std::tuple<const N &, const N &, const E &>;
     using different_type = int;
 
-    explicit const_iterator(Graph& g) : g_{g}, map_it_{g.connections_.cbegin()},
-        connection_it_{map_it_ == g.connections_.cend() ? emptyConnection_.cend() : map_it_->second.cbegin()} {}
+    explicit const_iterator(Graph &g)
+        : g_{g}, map_it_{g.connections_.cbegin()},
+          connection_it_{map_it_ == g.connections_.cend()
+                             ? emptyConnection_.cend()
+                             : map_it_->second.cbegin()} {}
 
-    const_iterator(Graph& g,
-                   typename std::map<N*, std::set<Connection, ConnectionCompare>, PointerNodeCompare>::const_iterator map_it)
-      : g_{g}, map_it_{map_it}, connection_it_{emptyConnection_.cend()} {}
+    const_iterator(
+        Graph &g,
+        typename std::map<N *, std::set<Connection, ConnectionCompare>,
+                          PointerNodeCompare>::const_iterator map_it)
+        : g_{g}, map_it_{map_it}, connection_it_{emptyConnection_.cend()} {}
 
-    const_iterator(Graph& g,
-      typename std::map<N*, std::set<Connection, ConnectionCompare>, PointerNodeCompare>::const_iterator map_it,
-      typename std::set<Connection, ConnectionCompare>::const_iterator connection_it)
-      : g_{g}, map_it_{map_it}, connection_it_{connection_it} {}
+    const_iterator(
+        Graph &g,
+        typename std::map<N *, std::set<Connection, ConnectionCompare>,
+                          PointerNodeCompare>::const_iterator map_it,
+        typename std::set<Connection, ConnectionCompare>::const_iterator
+            connection_it)
+        : g_{g}, map_it_{map_it}, connection_it_{connection_it} {}
 
     reference operator*() {
-      return {*(map_it_->first), *(connection_it_->first), *(connection_it_->second)};
+      return {*(map_it_->first), *(connection_it_->first),
+              *(connection_it_->second)};
     }
 
     const_iterator operator++() {
@@ -180,7 +153,7 @@ class Graph {
         if (++map_it_ != g_.connections_.cend()) {
           connection_it_ = map_it_->second.cbegin();
         } else {
-          return *this; // reached cend()
+          return *this; /* reached cend() */
         }
       }
       return *this;
@@ -192,28 +165,21 @@ class Graph {
       return copy;
     }
 
-    bool operator==(const const_iterator& rhs) {
-      return map_it_ == rhs.map_it_ &&
-        (map_it_ == g_.connections_.cend() || connection_it_ == rhs.connection_it_);
+    bool operator==(const const_iterator &rhs) {
+      return map_it_ == rhs.map_it_ && (map_it_ == g_.connections_.cend() ||
+                                        connection_it_ == rhs.connection_it_);
     }
 
-    bool operator!=(const const_iterator& rhs) {
-      return !(*this == rhs);
-    }
+    bool operator!=(const const_iterator &rhs) { return !(*this == rhs); }
   };
 
-  const_iterator cbegin() {
-    return const_iterator{*this};
-  }
+  const_iterator cbegin() { return const_iterator{*this}; }
 
-  const_iterator cend() {
-    return const_iterator{*this, connections_.cend()};
-  }
-
+  const_iterator cend() { return const_iterator{*this, connections_.cend()}; }
 };
 
-}  // namespace gdwg
+} // namespace gdwg
 
 #include "assignments/dg/graph.tpp"
 
-#endif  // ASSIGNMENTS_DG_GRAPH_H_
+#endif // ASSIGNMENTS_DG_GRAPH_H_
