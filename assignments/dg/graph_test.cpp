@@ -73,5 +73,11 @@ SCENARIO("Construct simple graphs") {
         REQUIRE(!b.InsertEdge("Hello", "how", 3));
       }
     }
+    WHEN("delete a node"){
+      b.DeleteNode("Hello");
+      THEN("node Hello should not exist"){
+        REQUIRE(!b.IsNode("Hello"));
+      }
+    }
   }
 }

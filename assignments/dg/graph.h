@@ -29,6 +29,9 @@ class Graph {
   // copy constructor
   Graph(const gdwg::Graph<N, E>& old);
 
+  // move constructor
+  Graph(const gdwg::Graph<N, E>&& old);
+
   // destructor
   ~Graph() = default;
   // ====================================METHOD================================================
@@ -49,6 +52,11 @@ class Graph {
 
   std::vector<N> GetNodes();
 
+  bool DeleteNode(const N& node);
+
+  bool Replace(const N& oldData, const N& newData);
+
+  void MergeReplace(const N& oldData, const N& newData);
 
  private:
 
@@ -90,6 +98,20 @@ class Graph {
     }
   };
 
+  struct UniquePointerEdgeCompare {
+    bool operator()(const std::unique_ptr<E>& lhs, const std::unique_ptr<E>& rhs) const {
+      return *lhs < *rhs;
+    }
+    /* for set transparent comparison */
+    bool operator()(const E& lhs, const std::unique_ptr<E>& rhs) const {
+      return lhs < *rhs;
+    }
+    bool operator()(const std::unique_ptr<E>& lhs, const E& rhs) const {
+      return *lhs < rhs;
+    }
+    using is_transparent = const E&;
+  };
+
   struct ConnectionCompare{
     bool operator()(const Connection& lhs, const Connection& rhs) const {
       return (*(lhs.first) != *(rhs.first)) ?
@@ -118,7 +140,7 @@ class Graph {
     using is_transparent = const N&;
   };
   std::set<std::unique_ptr<N>, UniquePointerNodeCompare> nodes_;
-  std::set<std::unique_ptr<E>> edges_;
+  std::set<std::unique_ptr<E>, UniquePointerEdgeCompare> edges_;
   std::map<N*, std::set<Connection, ConnectionCompare>, PointerNodeCompare> connections_;
 
  public:

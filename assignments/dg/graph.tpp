@@ -72,6 +72,14 @@ gdwg::Graph<N, E>::Graph(const gdwg::Graph<N, E>& old){
   }
 }
 
+// move constructor
+template <typename N, typename E>
+gdwg::Graph<N, E>::Graph(const gdwg::Graph<N, E>&& old){
+  this->nodes_ = std::move(old.nodes_);
+  this->edges_ = std::move(old.edges_);
+  this->connections_ = std::move(old.connections_);
+}
+
 // ====================================METHOD================================================
 template <typename N, typename E>
 bool gdwg::Graph<N, E>::InsertNode(const N& node) {
@@ -164,3 +172,55 @@ std::vector<N> gdwg::Graph<N, E>::GetNodes(){
 
   return res;
 }
+
+template <typename N, typename E>
+bool gdwg::Graph<N, E>::DeleteNode(const N& node) {
+  if (!IsNode(node)) {
+    return false;
+  }
+  N* deleted = getNode(node);
+  auto uni_node = nodes_.find(node);
+
+  // if node is a src node
+  auto connection_list = connections_[deleted];
+  if(!connection_list.empty()){
+    // delete all the connection when node is src node
+    for(const auto& pair : connection_list){
+      auto edge = edges_.find(*(pair.second));
+      edges_.erase(edge);
+    }
+    // delete the entry
+    connections_.erase(deleted);
+  }
+
+  // loop through all the connections
+  for(auto i = connections_.begin(); i != connections_.end(); i++){
+    for(auto pair = (*i).second.begin(); pair != (*i).second.end(); pair++){
+      if((*pair).first == deleted){
+        auto edge = edges_.find(*((*pair).second));
+        edges_.erase(edge);
+        (*i).second.erase(*pair);
+      }
+    }
+  }
+
+  nodes_.erase(uni_node);
+  return true;
+}
+
+template <typename N, typename E>
+bool gdwg::Graph<N, E>::Replace(const N& oldData, const N& newData){
+  if(!IsNode(oldData)){
+    throw std::runtime_error("Cannot call Graph::Replace on a node that doesn't exist");
+  }
+
+  if(IsNode(newData)){
+    return false;
+  }
+
+  N* old = getNode(oldData);
+  *old = newData;
+  return true;
+}
+
+
