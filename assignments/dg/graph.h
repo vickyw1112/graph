@@ -1,6 +1,7 @@
 #ifndef ASSIGNMENTS_DG_GRAPH_H_
 #define ASSIGNMENTS_DG_GRAPH_H_
 
+#include <iterator>
 #include <map>
 #include <memory>
 #include <set>
@@ -45,8 +46,9 @@ class Graph {
    public:
     using iterator_category = std::bidirectional_iterator_tag;
     using value_type = std::tuple<N, N, E>;
-    using reference = const std::tuple<const N&, const N&, const E&>;
-    using different_type = int;
+    using reference = std::tuple<const N&, const N&, const E&>;
+    using difference_type = int;
+    using pointer = value_type*;
 
     const_iterator(const MapItType& map_it,
                    const MapItType& sentinel,
@@ -54,12 +56,17 @@ class Graph {
       : map_it_{map_it}, sentinel_{sentinel}, connection_it_{connection_it} {};
 
     reference operator*();
+    pointer operator->() { return *this; }
     const_iterator operator++();
     const_iterator operator++(int);
+    const_iterator operator--();
+    const_iterator operator--(int);
 
     bool operator==(const const_iterator& rhs);
     bool operator!=(const const_iterator& rhs);
   };
+
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
   /* ===== Constructors ===== */
   Graph() = default;
@@ -102,8 +109,15 @@ class Graph {
   const_iterator find(const N& src, const N& dst, const E& w);
   bool erase(const N& src, const N& dst, const E& w);
   const_iterator erase(const_iterator it);
-  const_iterator cbegin();
-  const_iterator cend();
+  const_iterator cbegin() const;
+  const_iterator cend() const;
+  const_reverse_iterator crbegin() const { return const_reverse_iterator{cend()}; }
+  const_reverse_iterator crend() const { return const_reverse_iterator{cbegin()}; }
+
+  const_iterator begin() { return cbegin(); }
+  const_iterator end() { return cend(); }
+  const_reverse_iterator rbegin() { return crbegin(); }
+  const_reverse_iterator rend() { return crend(); }
 
  private:
   /**

@@ -1,10 +1,10 @@
+#include <algorithm>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <set>
 #include <utility>
 #include <vector>
-#include <iterator>
-#include <algorithm>
 
 /* ===== Iterator Overloads ===== */
 /* dereference Iterator */
@@ -35,6 +35,36 @@ template <typename N, typename E>
 typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::operator++(int) {
   const_iterator copy = *this;
   ++*this;
+  return copy;
+}
+
+/* pre decrement */
+template <typename N, typename E>
+typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::operator--() {
+  /* if we're at end() */
+  if (map_it_ == sentinel_) {
+    map_it_--;
+    while (map_it_->second.cend() == map_it_->second.cbegin()) {
+      map_it_--;
+    }
+    connection_it_ = std::prev(map_it_->second.cend());
+    return *this;
+  }
+
+  /* if connection_it_ is first iterator of current connections set */
+  while (connection_it_ == map_it_->second.cbegin()) {
+    map_it_--;
+    connection_it_ = map_it_->second.cend();
+  }
+  --connection_it_;
+  return *this;
+}
+
+/* post decrement */
+template <typename N, typename E>
+typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::operator--(int) {
+  const_iterator copy = *this;
+  --*this;
   return copy;
 }
 
@@ -256,9 +286,10 @@ bool gdwg::Graph<N, E>::Replace(const N& oldData, const N& newData) {
 }
 
 template <typename N, typename E>
-void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData){
-  if(!IsNode(oldData) || !IsNode(newData)){
-    throw std::runtime_error("Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
+void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData) {
+  if (!IsNode(oldData) || !IsNode(newData)) {
+    throw std::runtime_error(
+        "Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
   }
 
   N* old = getNode(oldData);
@@ -269,44 +300,41 @@ void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData){
   auto connection_list = connections_[old];
   auto newConnectList = connections_[newN];
 
-  for(auto pairIt = newConnectList.begin(); pairIt != newConnectList.end();){
+  for (auto pairIt = newConnectList.begin(); pairIt != newConnectList.end();) {
     // change all oldnode to new node
     // make sure no dup value
-    if(pairIt->first == old){
+    if (pairIt->first == old) {
       /* check if have dup pair */
       auto newPair = std::make_pair(newN, pairIt->second);
 
       /* newPair is different with pairs in newConnections */
-      if(newConnectList.find(newPair) == newConnectList.end()){
+      if (newConnectList.find(newPair) == newConnectList.end()) {
         newConnectList.insert(newPair);
-      }
 
-      /* have dup value, remove dup edge from edges*/
-      else{
+        /* have dup value, remove dup edge from edges*/
+      } else {
         auto edge = edges_.find(pairIt->second);
         edges_.erase(edge);
       }
 
       // delete old pair
       pairIt = newConnectList.erase(pairIt);
-    }
-    else{
+    } else {
       pairIt++;
     }
   }
 
   // merge all connections which belong to oldNode to newNode
   // delete all the connection when node is src node
-  for(const auto& pair : connection_list) {
+  for (const auto& pair : connection_list) {
     /* change oldNode to newNode */
-    if(pair.first == old){
-       pair.first = newN;
+    if (pair.first == old) {
+      pair.first = newN;
     }
 
-    if(newConnectList.find(pair) == newConnectList.end()){
+    if (newConnectList.find(pair) == newConnectList.end()) {
       newConnectList.insert(pair);
-    }
-    else{
+    } else {
       auto edge = edges_.find(pair.second);
       edges_.erase(edge);
     }
@@ -319,7 +347,7 @@ void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData){
 }
 
 template <typename N, typename E>
-void gdwg::Graph<N, E>::Clear(){
+void gdwg::Graph<N, E>::Clear() {
   connections_.clear();
   nodes_.clear();
   edges_.clear();
@@ -343,7 +371,7 @@ template <typename N, typename E>
 std::vector<N> gdwg::Graph<N, E>::GetNodes() const {
   std::vector<N> res;
   auto outputIt = std::back_inserter(res);
-  auto copyFn = [] (const auto &p) { return *(p.first); };
+  auto copyFn = [](const auto& p) { return *(p.first); };
   transform(connections_.cbegin(), connections_.cend(), outputIt, copyFn);
   return res;
 }
@@ -392,15 +420,22 @@ std::vector<E> gdwg::Graph<N, E>::GetWeights(const N& src, const N& dst) const {
 // const_iterator erase(const_iterator it);
 
 template <typename N, typename E>
-typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::cbegin() {
+typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::cbegin() const {
+  auto mapIt = connections_.cbegin();
   if (connections_.cbegin() == connections_.cend()) {
     return cend();
-  } else {
-    return {connections_.cbegin(), connections_.cend(), connections_.cbegin()->second.cbegin()};
   }
+
+  /* ignore leading empty connectioon nodes */
+  while (mapIt->second.cbegin() == mapIt->second.cend()) {
+    if (++mapIt == connections_.cend())
+      return cend();
+  }
+
+  return {mapIt, connections_.cend(), mapIt->second.cbegin()};
 }
 
 template <typename N, typename E>
-typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::cend() {
+typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::cend() const {
   return {connections_.cend(), connections_.cend(), {}};
 }

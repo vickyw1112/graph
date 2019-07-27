@@ -1,7 +1,3 @@
-//
-// Created by vicky on 25/07/19.
-//
-
 #include <cassert>
 #include <iostream>
 #include <string>
@@ -10,10 +6,13 @@
 
 int main() {
   gdwg::Graph<std::string, double> g;
+  g.InsertNode("0");
+  g.InsertNode("1");
   g.InsertNode("a");
   g.InsertNode("b");
   g.InsertNode("c");
 
+  // assert(g.InsertEdge("0", "0", 0));
   assert(g.InsertEdge("b", "c", 1));
   assert(g.InsertEdge("b", "c", 2));
 
@@ -25,7 +24,14 @@ int main() {
   assert(g.InsertEdge("a", "c", 1));
   assert(g.InsertEdge("a", "c", 2));
 
-  for (auto it = g.cbegin(); it != g.cend(); ++it) {
+  std::cout << "Forward:\n";
+  for (const auto& tuple : g) {
+    std::cout << std::get<0>(tuple) << " " << std::get<1>(tuple) << " " << std::get<2>(tuple)
+              << std::endl;
+  }
+
+  std::cout << "Reverse:\n";
+  for (auto it = g.rbegin(); it != g.rend(); ++it) {
     std::cout << std::get<0>(*it) << " " << std::get<1>(*it) << " " << std::get<2>(*it)
               << std::endl;
   }
