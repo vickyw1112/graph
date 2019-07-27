@@ -9,6 +9,7 @@
 */
 
 #include <iostream>
+#include <string>
 
 #include "assignments/dg/graph.h"
 #include "catch.h"

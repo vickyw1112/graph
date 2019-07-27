@@ -563,7 +563,7 @@ _line_length = 100
 
 # The allowed extensions for file names
 # This is set by --extensions flag.
-_valid_extensions = set(['cc', 'h', 'cpp', 'cu', 'cuh'])
+_valid_extensions = set(['cc', 'h', 'cpp', 'cu', 'cuh', 'tpp'])
 
 # Treat all headers starting with 'h' equally: .h, .hpp, .hxx etc.
 # This is set by --headers flag.
@@ -6214,7 +6214,7 @@ def ParseArguments(args):
     path = os.path.dirname(__file__)
     filenames = [os.path.join(dp, f) for dp, dn, filenames in os.walk(path) for f in filenames]
 
-  filenames = filter(lambda f: f.endswith(".cpp") or f.endswith(".h") or f.endswith(".hpp") or f.endswith(".cc"), filenames)
+  filenames = filter(lambda f: f.endswith(".cpp") or f.endswith(".h") or f.endswith(".hpp") or f.endswith(".cc") or f.endswith(".tpp"), filenames)
   filenames = [f for f in filenames if not f.endswith("catch.h") and not f.endswith("catch.hpp")]
 
   _SetOutputFormat(output_format)
