@@ -47,7 +47,7 @@ SCENARIO("Construct simple graphs") {
       REQUIRE(g.IsNode("hello"));
     }
   }
-  GIVEN("auto list of nodes with weight"){
+  GIVEN("a list of nodes with weight"){
     std::string s1{"Hello"};
     std::string s2{"how"};
     std::string s3{"are"};
@@ -78,6 +78,21 @@ SCENARIO("Construct simple graphs") {
       THEN("node Hello should not exist"){
         REQUIRE(!b.IsNode("Hello"));
       }
+    }
+  }
+
+  GIVEN("simple graaph"){
+    std::string s1{"hello"};
+    std::string s2{"how"};
+    std::string s3{"are"};
+    auto e1 = std::make_tuple(s1, s2, 5.4);
+    auto e2 = std::make_tuple(s2, s3, 7.6);
+    auto e = std::vector<std::tuple<std::string, std::string, double>>{e1, e2};
+    gdwg::Graph<std::string, double> b{e.begin(), e.end()};
+    WHEN("copy this graph"){
+      gdwg::Graph<std::string, double> copyG{b};
+      std::vector<std::string> s{"hello", "how", "are"};
+      REQUIRE(copyG.GetNodes() == s);
     }
   }
 }

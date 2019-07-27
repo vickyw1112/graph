@@ -58,6 +58,8 @@ class Graph {
 
   void MergeReplace(const N& oldData, const N& newData);
 
+  void Clear();
+
  private:
 
   // if node exists, return raw pointer

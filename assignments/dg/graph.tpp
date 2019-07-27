@@ -223,4 +223,72 @@ bool gdwg::Graph<N, E>::Replace(const N& oldData, const N& newData){
   return true;
 }
 
+template <typename N, typename E>
+void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData){
+  if(!IsNode(oldData) || !IsNode(newData)){
+    throw std::runtime_error("Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
+  }
 
+  N* old = getNode(oldData);
+  auto delete_node = nodes_.find(oldData);
+  N* newN = getNode(newData);
+
+  // if oldnode is a src node
+  auto connection_list = connections_[old];
+  auto newConnectList = connections_[newN];
+
+  for(auto pairIt = newConnectList.begin(); pairIt != newConnectList.end();){
+    // change all oldnode to new node
+    // make sure no dup value
+    if(pairIt->first == old){
+      /* check if have dup pair */
+      auto newPair = std::make_pair(newN, pairIt->second);
+
+      /* newPair is different with pairs in newConnections */
+      if(newConnectList.find(newPair) == newConnectList.end()){
+        newConnectList.insert(newPair);
+      }
+
+      /* have dup value, remove dup edge from edges*/
+      else{
+        auto edge = edges_.find(pairIt->second);
+        edges_.erase(edge);
+      }
+
+      // delete old pair
+      pairIt = newConnectList.erase(pairIt);
+    }
+    else{
+      pairIt++;
+    }
+  }
+
+  // merge all connections which belong to oldNode to newNode
+  // delete all the connection when node is src node
+  for(const auto& pair : connection_list) {
+    /* change oldNode to newNode */
+    if(pair.first == old){
+       pair.first = newN;
+    }
+
+    if(newConnectList.find(pair) == newConnectList.end()){
+      newConnectList.insert(pair);
+    }
+    else{
+      auto edge = edges_.find(pair.second);
+      edges_.erase(edge);
+    }
+  }
+  // delete the entry
+  connections_.erase(old);
+
+  // delete the old node after merge
+  nodes_.erase(delete_node);
+}
+
+template <typename N, typename E>
+void gdwg::Graph<N, E>::Clear(){
+  connections_.clear();
+  nodes_.clear();
+  edges_.clear();
+}
