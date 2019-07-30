@@ -43,17 +43,17 @@ class Graph {
 
     friend class Graph<N, E>;
 
+    const_iterator(const MapItType& map_it,
+                   const MapItType& sentinel,
+                   const ConnectionItType& connection_it)
+      : map_it_{map_it}, sentinel_{sentinel}, connection_it_{connection_it} {};
+
    public:
     using iterator_category = std::bidirectional_iterator_tag;
     using value_type = std::tuple<N, N, E>;
     using reference = std::tuple<const N&, const N&, const E&>;
     using difference_type = int;
     using pointer = value_type*;
-
-    const_iterator(const MapItType& map_it,
-                   const MapItType& sentinel,
-                   const ConnectionItType& connection_it)
-      : map_it_{map_it}, sentinel_{sentinel}, connection_it_{connection_it} {};
 
     reference operator*();
     pointer operator->() { return *this; }
@@ -62,8 +62,13 @@ class Graph {
     const_iterator operator--();
     const_iterator operator--(int);
 
-    bool operator==(const const_iterator& rhs);
-    bool operator!=(const const_iterator& rhs);
+    friend bool operator==(const const_iterator& lhs, const const_iterator& rhs) {
+      return lhs.map_it_ == rhs.map_it_ &&
+             (lhs.map_it_ == lhs.sentinel_ || lhs.connection_it_ == rhs.connection_it_);
+    }
+    friend bool operator!=(const const_iterator& lhs, const const_iterator& rhs) {
+      return !(lhs == rhs);
+    }
   };
 
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
@@ -85,8 +90,7 @@ class Graph {
   explicit Graph(const gdwg::Graph<N, E>& old);
 
   /* move constructor */
-  // TODO make it default?
-  explicit Graph(const gdwg::Graph<N, E>&& old);
+  explicit Graph(gdwg::Graph<N, E>&& old) = default;
 
   ~Graph() = default;
 
@@ -106,9 +110,10 @@ class Graph {
   std::vector<N> GetConnected(const N& src) const;
   std::vector<E> GetWeights(const N& src, const N& dst) const;
 
-  const_iterator find(const N& src, const N& dst, const E& w);
+  const_iterator find(const N& src, const N& dst, const E& w) const;
   bool erase(const N& src, const N& dst, const E& w);
   const_iterator erase(const_iterator it);
+
   const_iterator cbegin() const;
   const_iterator cend() const;
   const_reverse_iterator crbegin() const { return const_reverse_iterator{cend()}; }
@@ -143,7 +148,8 @@ class Graph {
    * Graph attributes
    */
 
-  // TODO: make nodes_ and edges_ unordered
+  // TODO: make nodes_ and edges_ unordered ?
+  // no need to have edges_ unique ptr set?
   /* set of all unique pointer to nodes */
   std::set<std::unique_ptr<N>, UniquePointerNodeCompare> nodes_;
   /* set of all unique pointer to edges */

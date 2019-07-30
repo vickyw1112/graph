@@ -10,13 +10,88 @@
 
 #include <algorithm>
 #include <iostream>
+#include <random>
 #include <string>
 
 #include "assignments/dg/graph.h"
 #include "catch.h"
 
-// TODO iterator test
-// edge case: leading/trailing empty connection nodes
+std::random_device rd;
+std::mt19937 random_engine(rd());
+
+SCENARIO("Iterator test") {
+  GIVEN("Graph<int, double> with nodes 0, 1, 2, 3 and edges 1 -> 1: 0.5; 1 -> 1: 1.5; 1 -> 2: 0; "
+        "2 -> 2: 0.1") {
+    std::vector<std::tuple<int, int, double>> edges{
+        {1, 1, 0.5}, {1, 1, 1.5}, {1, 2, 0}, {2, 2, 0.1}};
+    /* shuffle order to test iterator order */
+    std::shuffle(edges.begin(), edges.end(), random_engine);
+    gdwg::Graph<int, double> g{edges.begin(), edges.end()};
+    g.InsertNode(0); /* leading node without connection */
+    g.InsertNode(3); /* trailing node without connection */
+    WHEN("Getting iterators using begin") {
+      auto it = g.begin();
+      THEN("Should return 4 edges") { REQUIRE(std::distance(g.begin(), g.end()) == 4); }
+      THEN("They should be in the order of src, dst, weight") {
+        REQUIRE(*it == std::make_tuple(1, 1, 0.5));
+        REQUIRE(*++it == std::make_tuple(1, 1, 1.5));
+        REQUIRE(*++it == std::make_tuple(1, 2, 0));
+        REQUIRE(*++it == std::make_tuple(2, 2, 0.1));
+      }
+    }
+    WHEN("Getting iterators using rbegin") {
+      auto it = g.rbegin();
+      THEN("Should return 4 edges") { REQUIRE(std::distance(g.rbegin(), g.rend()) == 4); }
+      THEN("They should be in the reverse order of src, dst, weight") {
+        REQUIRE(*it == std::make_tuple(2, 2, 0.1));
+        REQUIRE(*++it == std::make_tuple(1, 2, 0));
+        REQUIRE(*++it == std::make_tuple(1, 1, 1.5));
+        REQUIRE(*++it == std::make_tuple(1, 1, 0.5));
+      }
+    }
+    WHEN("using find to find edge {1 -> 1: 0.5}") {
+      auto it = g.find(1, 1, 0.5);
+      THEN("Should give iterator to that edge") {
+        REQUIRE(it != g.cend());
+        REQUIRE(*it == std::make_tuple(1, 1, 0.5));
+      }
+    }
+    WHEN("using find to find non-existent edge {1 -> 1: 0.6}") {
+      auto it = g.find(1, 1, 0.6);
+      THEN("Should give cend()") { REQUIRE(it == g.cend()); }
+    }
+    WHEN("using find to find non-existent edge {0 -> 0: 0.5}") {
+      auto it = g.find(0, 0, 0.5);
+      THEN("Should give cend()") { REQUIRE(it == g.cend()); }
+    }
+    WHEN("erase edge 1 -> 2: 0") {
+      THEN("should return true") { REQUIRE(g.erase(1, 2, 0)); }
+    }
+    WHEN("Using iterator to erase 1 -> 1: 0.5") {
+      THEN("should return iterator to 1 -> 1: 1.5") {
+        auto it = g.erase(g.cbegin());
+        REQUIRE(*it == std::make_tuple(1, 1, 1.5));
+        REQUIRE(std::distance(g.begin(), g.end()) == 3);
+      }
+    }
+    WHEN("Using iterator to erase 1 -> 2: 0") {
+      THEN("should return iterator to 2 -> 2: 0.1") {
+        auto it = g.cend();
+        std::advance(it, -2);
+        it = g.erase(it);
+        REQUIRE(*it == std::make_tuple(2, 2, 0.1));
+        REQUIRE(std::distance(g.begin(), g.end()) == 3);
+      }
+    }
+    WHEN("Using iterator to erase last edge 2 -> 2: 0.1") {
+      THEN("should return .cend()") {
+        auto it = g.erase(--g.cend());
+        REQUIRE(it == g.cend());
+        REQUIRE(std::distance(g.begin(), g.end()) == 3);
+      }
+    }
+  }
+}
 
 SCENARIO("Construct simple graphs") {
   GIVEN("Empty graph g with int nodes/edges") {

@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <cassert>
+#include <iostream>
 #include <iterator>
 #include <map>
 #include <memory>
@@ -68,17 +70,6 @@ typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::op
   return copy;
 }
 
-/* iterator equality comparison */
-template <typename N, typename E>
-bool gdwg::Graph<N, E>::const_iterator::operator==(const const_iterator& rhs) {
-  return map_it_ == rhs.map_it_ && (map_it_ == sentinel_ || connection_it_ == rhs.connection_it_);
-}
-
-template <typename N, typename E>
-bool gdwg::Graph<N, E>::const_iterator::operator!=(const const_iterator& rhs) {
-  return !(*this == rhs);
-}
-
 /* ===== Compare functors ===== */
 template <typename N, typename E>
 struct gdwg::Graph<N, E>::UniquePointerNodeCompare {
@@ -94,6 +85,10 @@ struct gdwg::Graph<N, E>::UniquePointerNodeCompare {
 template <typename N, typename E>
 struct gdwg::Graph<N, E>::PointerNodeCompare {
   bool operator()(const N* lhs, const N* rhs) const { return *lhs < *rhs; }
+  /* for set transparent comparison */
+  bool operator()(const N& lhs, const N* rhs) const { return lhs < *rhs; }
+  bool operator()(const N* lhs, const N& rhs) const { return *lhs < rhs; }
+  using is_transparent = const N&;
 };
 
 template <typename N, typename E>
@@ -191,13 +186,6 @@ gdwg::Graph<N, E>::Graph(const gdwg::Graph<N, E>& old) {
   }
 }
 
-template <typename N, typename E>
-gdwg::Graph<N, E>::Graph(const gdwg::Graph<N, E>&& old) {
-  this->nodes_ = std::move(old.nodes_);
-  this->edges_ = std::move(old.edges_);
-  this->connections_ = std::move(old.connections_);
-}
-
 /* ===== METHOD ====== */
 template <typename N, typename E>
 bool gdwg::Graph<N, E>::InsertNode(const N& node) {
@@ -220,7 +208,7 @@ bool gdwg::Graph<N, E>::InsertEdge(const N& src, const N& dst, const E& w) {
   N* from = GetNode(src);
   N* to = GetNode(dst);
 
-  auto connections = this->connections_[from];
+  const auto& connections = this->connections_[from];
   /* exact same edge exists */
   if (connections.find(std::make_pair(dst, w)) != connections.end()) {
     return false;
@@ -240,7 +228,7 @@ bool gdwg::Graph<N, E>::DeleteNode(const N& node) {
   }
   N* deleteNodePtr = GetNode(node);
 
-  auto connections = connections_[deleteNodePtr];
+  auto& connections = connections_[deleteNodePtr];
   /* delete all edges where node is src node */
   for (const auto& pair : connections) {
     auto edgeIt = edges_.find(pair.second);
@@ -297,8 +285,8 @@ void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData) {
   N* newN = getNode(newData);
 
   // if oldnode is a src node
-  auto connection_list = connections_[old];
-  auto newConnectList = connections_[newN];
+  auto& connection_list = connections_[old];
+  auto& newConnectList = connections_[newN];
 
   for (auto pairIt = newConnectList.begin(); pairIt != newConnectList.end();) {
     // change all oldnode to new node
@@ -363,7 +351,7 @@ bool gdwg::Graph<N, E>::IsConnected(const N& src, const N& dst) const {
   /* cannot use GetNode since it's not const */
   N* from = (*nodes_.find(src)).get();
 
-  auto connections = this->connections_.at(from);
+  auto& connections = this->connections_.at(from);
   return connections.find(dst) != connections.end();
 }
 
@@ -414,10 +402,54 @@ std::vector<E> gdwg::Graph<N, E>::GetWeights(const N& src, const N& dst) const {
   return res;
 }
 
-// TODO
-// const_iterator find(const N& src, const N& dst, const E& w);
-// bool erase(const N& src, const N& dst, const E& w);
-// const_iterator erase(const_iterator it);
+template <typename N, typename E>
+typename gdwg::Graph<N, E>::const_iterator
+gdwg::Graph<N, E>::find(const N& src, const N& dst, const E& w) const {
+  auto mapIt = connections_.find(src);
+  if (mapIt == connections_.end())
+    return cend();
+
+  /* get connections set of src node */
+  auto& connections = mapIt->second;
+
+  auto connIt = connections.find(std::make_pair(dst, w));
+  if (connIt == connections.end()) {
+    return cend();
+  } else {
+    return const_iterator{mapIt, connections_.end(), connIt};
+  }
+}
+
+template <typename N, typename E>
+bool gdwg::Graph<N, E>::erase(const N& src, const N& dst, const E& w) {
+  const_iterator it = find(src, dst, w);
+  if (it == cend())
+    return false;
+  erase(it);
+  return true;
+}
+
+template <typename N, typename E>
+typename gdwg::Graph<N, E>::const_iterator
+gdwg::Graph<N, E>::erase(typename gdwg::Graph<N, E>::const_iterator it) {
+  if (it == cend())
+    return cend();
+
+  /* have to use .at to get non-const connections set */
+  auto& connections = connections_.at(it.map_it_->first);
+  /* cast result to const iterator */
+  decltype(it.connection_it_) nextConn = connections.erase(it.connection_it_);
+
+  /* handle if nextConn is end of current connections set */
+  while (nextConn == it.map_it_->second.cend()) {
+    if ((++it.map_it_) == connections_.cend()) {
+      return cend();
+    }
+    nextConn = it.map_it_->second.begin();
+  }
+
+  return const_iterator{it.map_it_, connections_.cend(), nextConn};
+}
 
 template <typename N, typename E>
 typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::cbegin() const {
