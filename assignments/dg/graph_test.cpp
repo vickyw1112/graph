@@ -370,3 +370,44 @@ SCENARIO("test replace method"){
     }
   }
 }
+
+SCENARIO("test mergereplace method"){
+  GIVEN("a simple graph"){
+    int s1 = 1;
+    int s2 = 2;
+    int s3 = 3;
+    int s4 = 4;
+    auto e1 = std::make_tuple(s1, s2, "A");
+    auto e2 = std::make_tuple(s2, s3, "B");
+    auto e3 = std::make_tuple(s3, s4, "B");
+    auto e4 = std::make_tuple(s2, s4, "C");
+    auto e = std::vector<std::tuple<int, int, std::string>>{e1, e2, e3, e4};
+    gdwg::Graph<int, std::string> b{e.begin(), e.end()};
+
+    WHEN("replacemerge with a non-exist node"){
+      THEN("throw exception"){
+        REQUIRE_THROWS_WITH(b.MergeReplace(2, 5), "Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
+      }
+    }
+    WHEN("replace merge with 3"){
+      b.MergeReplace(2, 3);
+      THEN("node 2 should be gone"){
+        REQUIRE(!b.IsNode(2));
+      }
+      THEN("all connections belong to 2 should be 3 's"){
+        std::vector<int> nodes = {3, 4};
+        REQUIRE(b.GetConnected(3) == nodes);
+
+        std::vector<std::string> w1{"A"};
+        REQUIRE(b.GetWeights(1, 3) == w1);
+
+
+        std::vector<std::string> w2{"B"};
+        REQUIRE(b.GetWeights(3, 3) == w2);
+
+        std::vector<std::string> w3{"B", "C"};
+        REQUIRE(b.GetWeights(3, 4) == w3);
+      }
+    }
+  }
+}
