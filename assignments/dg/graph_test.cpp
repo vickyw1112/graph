@@ -40,9 +40,7 @@ SCENARIO("Operator tests") {
       REQUIRE(ss.str() == output);
     }
     WHEN("Compare g to itself") {
-      THEN("They should be equal") {
-        REQUIRE(g == g);
-      }
+      THEN("They should be equal") { REQUIRE(g == g); }
     }
     WHEN("Compare g to a copy of it") {
       gdwg::Graph<int, int> g2{g};
@@ -94,9 +92,7 @@ SCENARIO("Operator tests") {
     THEN("Using output stream op") {
       std::stringstream ss;
       ss << g1;
-      THEN("Should give empty string") {
-        REQUIRE(ss.str().size() == 0);
-      }
+      THEN("Should give empty string") { REQUIRE(ss.str().size() == 0); }
     }
   }
 }
