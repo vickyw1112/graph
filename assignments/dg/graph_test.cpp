@@ -91,6 +91,19 @@ SCENARIO("Iterator test") {
       }
     }
   }
+  GIVEN("Empty const graph g") {
+    const gdwg::Graph<int, int> g;
+    WHEN("Getting cbegin()") {
+      THEN("Should be the same as cend()") {
+        REQUIRE(g.cbegin() == g.cend());
+      }
+    }
+    WHEN("finding edge 1 1 1") {
+      THEN("Should return cend()") {
+        REQUIRE(g.find(1, 1, 1) == g.cend());
+      }
+    }
+  }
 }
 
 SCENARIO("Construct simple graphs") {

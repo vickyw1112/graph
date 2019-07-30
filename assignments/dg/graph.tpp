@@ -8,6 +8,27 @@
 #include <utility>
 #include <vector>
 
+/* ===== Private Methods ===== */
+/**
+ * if node exists, return raw pointer to it
+ * else make unique ptr, put it to node set
+ * then return raw pointer
+ */
+template <typename N, typename E>
+N* gdwg::Graph<N, E>::GetNode(const N& val) {
+  N* temp;
+  if (!IsNode(val)) {
+    std::unique_ptr<N> node = std::make_unique<N>(val);
+    temp = node.get();
+    this->connections_[node.get()] = std::set<Connection, ConnectionCompare>{};
+    this->nodes_.insert(std::move(node));
+  } else {
+    temp = connections_.find(val)->first;
+  }
+
+  return temp;
+}
+
 /* ===== Iterator Overloads ===== */
 /* dereference Iterator */
 template <typename N, typename E>
@@ -92,18 +113,6 @@ struct gdwg::Graph<N, E>::PointerNodeCompare {
 };
 
 template <typename N, typename E>
-struct gdwg::Graph<N, E>::UniquePointerEdgeCompare {
-  bool operator()(const std::unique_ptr<E>& lhs, const std::unique_ptr<E>& rhs) const {
-    return lhs < rhs;
-  }
-  /* for set transparent comparison */
-  /* use raw pointer to compare, since there could be duplicated edge values */
-  bool operator()(const E* lhs, const std::unique_ptr<E>& rhs) const { return lhs < rhs.get(); }
-  bool operator()(const std::unique_ptr<E>& lhs, const E* rhs) const { return lhs.get() < rhs; }
-  using is_transparent = const E&;
-};
-
-template <typename N, typename E>
 struct gdwg::Graph<N, E>::ConnectionCompare {
   bool operator()(const Connection& lhs, const Connection& rhs) const {
     return (*(lhs.first) != *(rhs.first)) ? *(lhs.first) < *(rhs.first)
@@ -134,7 +143,7 @@ gdwg::Graph<N, E>::Graph(typename std::vector<N>::const_iterator start,
   for (auto i = start; i != end; i++) {
     if (!IsNode(*i)) {
       std::unique_ptr<N> newNode = std::make_unique<N>(*i);
-      connections_[newNode.get()] = {};
+      connections_[newNode.get()] = std::set<Connection, ConnectionCompare>{};
       nodes_.insert(std::move(newNode));
     }
   }
@@ -156,7 +165,7 @@ gdwg::Graph<N, E>::Graph(std::initializer_list<N> list) {
   for (auto i = list.begin(); i != list.end(); i++) {
     if (!IsNode(*i)) {
       std::unique_ptr<N> newNode = std::make_unique<N>(*i);
-      connections_[newNode.get()] = {};
+      connections_[newNode.get()] = std::set<Connection, ConnectionCompare>{};
       nodes_.insert(std::move(newNode));
     }
   }
@@ -173,15 +182,10 @@ gdwg::Graph<N, E>::Graph(const gdwg::Graph<N, E>& old) {
     for (const auto& connectionPair : connections) {
       const auto& [toPtr, edgePtr] = connectionPair;
 
-      std::unique_ptr<E> edge = std::make_unique<E>(*edgePtr);
-
       N* toNode = GetNode(*toPtr);
 
       /* insert connections */
-      this->connections_[fromNode].insert(std::make_pair(toNode, edge.get()));
-
-      /* put edge unique ptr to edges_ */
-      this->edges_.insert(std::move(edge));
+      this->connections_[fromNode].insert(std::make_pair(toNode, std::make_unique<E>(*edgePtr)));
     }
   }
 }
@@ -193,7 +197,7 @@ bool gdwg::Graph<N, E>::InsertNode(const N& node) {
     return false;
 
   std::unique_ptr<N> newNode = std::make_unique<N>(node);
-  connections_[newNode.get()] = {};
+  connections_[newNode.get()] = std::set<Connection, ConnectionCompare>{};
   nodes_.insert(std::move(newNode));
   return true;
 }
@@ -215,9 +219,7 @@ bool gdwg::Graph<N, E>::InsertEdge(const N& src, const N& dst, const E& w) {
   }
 
   /* create edge and add it to graph */
-  std::unique_ptr<E> edge = std::make_unique<E>(w);
-  this->connections_[from].insert(std::make_pair(to, edge.get()));
-  this->edges_.insert(std::move(edge));
+  this->connections_[from].insert(std::make_pair(to, std::make_unique<E>(w)));
   return true;
 }
 
@@ -228,23 +230,15 @@ bool gdwg::Graph<N, E>::DeleteNode(const N& node) {
   }
   N* deleteNodePtr = GetNode(node);
 
-  auto& connections = connections_[deleteNodePtr];
-  /* delete all edges where node is src node */
-  for (const auto& pair : connections) {
-    auto edgeIt = edges_.find(pair.second);
-    edges_.erase(edgeIt);
-  }
-  /* delete the map entry */
+  /* delete the map entry for all edges from delete node */
   connections_.erase(deleteNodePtr);
 
-  /* loop through all the connections */
+  /* loop through all the connections to delete edges connected to this node */
   for (auto mapIt = connections_.begin(); mapIt != connections_.end(); mapIt++) {
     for (auto connIt = mapIt->second.begin(); connIt != mapIt->second.end();) {
       const auto& [nodePtr, edgePtr] = *connIt;
       /* delete edge if dst node is the node we're deleting */
       if (nodePtr == deleteNodePtr) {
-        auto edgeIt = edges_.find(edgePtr);
-        edges_.erase(edgeIt);
         connIt = mapIt->second.erase(connIt); /* connIt is invalidated */
       } else {
         connIt++;
@@ -252,7 +246,7 @@ bool gdwg::Graph<N, E>::DeleteNode(const N& node) {
     }
   }
 
-  /* remove node unique ptr from edges, thus free node */
+  /* remove node unique ptr from nodes_, thus free node */
   auto it = nodes_.find(node);
   nodes_.erase(it);
   return true;
@@ -273,6 +267,7 @@ bool gdwg::Graph<N, E>::Replace(const N& oldData, const N& newData) {
   return true;
 }
 
+// TODO: fix this, have to traverse all edges
 template <typename N, typename E>
 void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData) {
   if (!IsNode(oldData) || !IsNode(newData)) {
@@ -281,7 +276,6 @@ void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData) {
   }
 
   N* old = getNode(oldData);
-  auto delete_node = nodes_.find(oldData);
   N* newN = getNode(newData);
 
   // if oldnode is a src node
@@ -298,13 +292,7 @@ void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData) {
       /* newPair is different with pairs in newConnections */
       if (newConnectList.find(newPair) == newConnectList.end()) {
         newConnectList.insert(newPair);
-
-        /* have dup value, remove dup edge from edges*/
-      } else {
-        auto edge = edges_.find(pairIt->second);
-        edges_.erase(edge);
       }
-
       // delete old pair
       pairIt = newConnectList.erase(pairIt);
     } else {
@@ -322,23 +310,20 @@ void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData) {
 
     if (newConnectList.find(pair) == newConnectList.end()) {
       newConnectList.insert(pair);
-    } else {
-      auto edge = edges_.find(pair.second);
-      edges_.erase(edge);
     }
   }
   // delete the entry
   connections_.erase(old);
 
   // delete the old node after merge
-  nodes_.erase(delete_node);
+  auto deleteIt = nodes_.find(oldData);
+  nodes_.erase(deleteIt);
 }
 
 template <typename N, typename E>
 void gdwg::Graph<N, E>::Clear() {
   connections_.clear();
   nodes_.clear();
-  edges_.clear();
 }
 
 template <typename N, typename E>
@@ -349,7 +334,7 @@ bool gdwg::Graph<N, E>::IsConnected(const N& src, const N& dst) const {
   }
 
   /* cannot use GetNode since it's not const */
-  N* from = (*nodes_.find(src)).get();
+  N* from = connections_.find(src)->first;
 
   auto& connections = this->connections_.at(from);
   return connections.find(dst) != connections.end();

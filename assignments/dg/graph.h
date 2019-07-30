@@ -18,11 +18,12 @@ class Graph {
    * Comapre functors
    */
   struct UniquePointerNodeCompare;
-  struct UniquePointerEdgeCompare;
   struct PointerNodeCompare;
   struct ConnectionCompare;
 
-  using Connection = std::pair<N*, E*>;
+  /* Each connection represent an edge from certain node to this node with this edge value
+   * see below connections_ map */
+  using Connection = std::pair<N*, std::unique_ptr<E>>;
 
  public:
   using Edge = std::tuple<N, N, E>;
@@ -103,7 +104,7 @@ class Graph {
   void MergeReplace(const N& oldData, const N& newData);
   void Clear();
 
-  bool IsNode(const N& val) const { return nodes_.find(val) != nodes_.end(); }
+  bool IsNode(const N& val) const { return connections_.find(val) != connections_.end(); }
   bool IsConnected(const N& src, const N& dst) const;
 
   std::vector<N> GetNodes() const;
@@ -130,31 +131,14 @@ class Graph {
    * else make unique ptr, put it to node set
    * then return raw pointer
    */
-  N* GetNode(const N& val) {
-    N* temp;
-    if (!IsNode(val)) {
-      std::unique_ptr<N> node = std::make_unique<N>(val);
-      temp = node.get();
-      this->connections_[node.get()] = {};
-      this->nodes_.insert(std::move(node));
-    } else {
-      temp = (*this->nodes_.find(val)).get();
-    }
-
-    return temp;
-  }
+  N* GetNode(const N& val);
 
   /**
    * Graph attributes
    */
-
-  // TODO: make nodes_ and edges_ unordered ?
-  // no need to have edges_ unique ptr set?
   /* set of all unique pointer to nodes */
   std::set<std::unique_ptr<N>, UniquePointerNodeCompare> nodes_;
-  /* set of all unique pointer to edges */
-  std::set<std::unique_ptr<E>, UniquePointerEdgeCompare> edges_;
-  /* map to represent adjacency list that uses raw pointers */
+  /* map to represent adjacency list */
   std::map<N*, std::set<Connection, ConnectionCompare>, PointerNodeCompare> connections_;
 };
 
