@@ -5,6 +5,8 @@
 #include <vector>
 #include <iterator>
 #include <algorithm>
+#include "assignments/dg/graph.h"
+
 
 /* ===== Iterator Overloads ===== */
 /* dereference Iterator */
@@ -251,7 +253,30 @@ bool gdwg::Graph<N, E>::Replace(const N& oldData, const N& newData) {
   }
 
   N* old = GetNode(oldData);
-  *old = newData;
+  N* newNode = GetNode(newData);
+
+  /* swap old src node to new */
+  auto connection_list = connections_[old];
+  for(auto pair : connection_list){
+    connections_[newNode].insert(pair);
+  }
+  connections_.erase(old);
+
+  /* loop through the whole set of connections, swap old to new*/
+  for (auto mapIt = connections_.begin(); mapIt != connections_.end(); mapIt++) {
+    for (auto connIt = mapIt->second.begin(); connIt != mapIt->second.end();) {
+      const auto& [nodePtr, edgePtr] = *connIt;
+      if (nodePtr == old) {
+        mapIt->second.insert(std::make_pair(newNode, edgePtr));
+        connIt = mapIt->second.erase(connIt); /* connIt is invalidated */
+      } else {
+        connIt++;
+      }
+    }
+  }
+
+  /* free old node */
+  nodes_.erase(nodes_.find(oldData));
   return true;
 }
 
@@ -261,48 +286,42 @@ void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData){
     throw std::runtime_error("Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
   }
 
-  N* old = getNode(oldData);
+  N* old = GetNode(oldData);
   auto delete_node = nodes_.find(oldData);
-  N* newN = getNode(newData);
+  N* newN = GetNode(newData);
 
-  // if oldnode is a src node
+  /* if oldnode is a src node */
   auto connection_list = connections_[old];
-  auto newConnectList = connections_[newN];
 
-  for(auto pairIt = newConnectList.begin(); pairIt != newConnectList.end();){
-    // change all oldnode to new node
-    // make sure no dup value
-    if(pairIt->first == old){
-      /* check if have dup pair */
-      auto newPair = std::make_pair(newN, pairIt->second);
 
-      /* newPair is different with pairs in newConnections */
-      if(newConnectList.find(newPair) == newConnectList.end()){
-        newConnectList.insert(newPair);
+  /* loop through the whole set of connections, cahnge old to new*/
+  for (auto mapIt = connections_.begin(); mapIt != connections_.end(); mapIt++) {
+
+    for (auto connIt = mapIt->second.begin(); connIt != mapIt->second.end();) {
+      const auto& [nodePtr, edgePtr] = *connIt;
+      if (nodePtr == old) {
+        connIt = mapIt->second.erase(connIt); /* connIt is invalidated */
+
+        /* if can not insert new pair into list, free edge*/
+        auto pair = std::make_pair(newN, edgePtr);
+        if(mapIt->second.find(pair) == mapIt->second.end()) {
+          mapIt->second.insert(pair);
+        }
+        else{
+          auto edge = edges_.find(edgePtr);
+          edges_.erase(edge);
+        }
+
+      } else {
+        connIt++;
       }
-
-      /* have dup value, remove dup edge from edges*/
-      else{
-        auto edge = edges_.find(pairIt->second);
-        edges_.erase(edge);
-      }
-
-      // delete old pair
-      pairIt = newConnectList.erase(pairIt);
-    }
-    else{
-      pairIt++;
     }
   }
 
+  auto& newConnectList = connections_[newN];
   // merge all connections which belong to oldNode to newNode
   // delete all the connection when node is src node
   for(const auto& pair : connection_list) {
-    /* change oldNode to newNode */
-    if(pair.first == old){
-       pair.first = newN;
-    }
-
     if(newConnectList.find(pair) == newConnectList.end()){
       newConnectList.insert(pair);
     }
@@ -313,6 +332,8 @@ void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData){
   }
   // delete the entry
   connections_.erase(old);
+
+
 
   // delete the old node after merge
   nodes_.erase(delete_node);
@@ -405,3 +426,10 @@ template <typename N, typename E>
 typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::cend() {
   return {connections_.cend(), connections_.cend(), {}};
 }
+
+/*
+template<typename N, typename E>
+gdwg::Graph<N, E>& gdwg::Graph<N, E>::operator=(const gdwg::Graph<N, E>& rhs) {
+}
+
+*/
