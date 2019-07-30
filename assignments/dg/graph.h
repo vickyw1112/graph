@@ -52,7 +52,7 @@ class Graph {
 
    public:
     using iterator_category = std::bidirectional_iterator_tag;
-    using value_type = std::tuple<N, N, E>;
+    using value_type = Edge;
     using reference = std::tuple<const N&, const N&, const E&>;
     using difference_type = int;
     using pointer = value_type*;

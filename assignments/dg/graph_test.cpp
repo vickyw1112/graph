@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <iostream>
 #include <random>
+#include <sstream>
 #include <string>
 
 #include "assignments/dg/graph.h"
@@ -18,6 +19,87 @@
 
 std::random_device rd;
 std::mt19937 random_engine(rd());
+
+SCENARIO("Operator tests") {
+  GIVEN("Graph<int, int> of {1, 1, 1}, {1, 1, 2}, {2, -, -}  {3, 1, 0}") {
+    std::vector<std::tuple<int, int, int>> edges{{1, 1, 1}, {1, 1, 2}, {3, 1, 0}};
+    gdwg::Graph<int, int> g{edges.begin(), edges.end()};
+    g.InsertNode(2);
+    WHEN("Calling output stream iterator") {
+      std::stringstream ss;
+      ss << g;
+      const std::string output{"1 (\n"
+                               "  1 | 1\n"
+                               "  1 | 2\n"
+                               ")\n"
+                               "2 (\n"
+                               ")\n"
+                               "3 (\n"
+                               "  1 | 0\n"
+                               ")\n"};
+      REQUIRE(ss.str() == output);
+    }
+    WHEN("Compare g to itself") {
+      THEN("They should be equal") {
+        REQUIRE(g == g);
+      }
+    }
+    WHEN("Compare g to a copy of it") {
+      gdwg::Graph<int, int> g2{g};
+      THEN("They should be equal") {
+        REQUIRE(g == g2);
+        REQUIRE(!(g != g2));
+      }
+    }
+    WHEN("Compare g to a modified copy (delete node 2) of it") {
+      gdwg::Graph<int, int> g2{g};
+      g2.DeleteNode(2);
+      THEN("They should be not equal") {
+        REQUIRE(g != g2);
+        REQUIRE(!(g == g2));
+      }
+    }
+    WHEN("Compare g to a modified copy (delete edge {1, 1, 1}) of it") {
+      gdwg::Graph<int, int> g2{g};
+      REQUIRE(g2.erase(1, 1, 1));
+      THEN("They should be not equal") {
+        REQUIRE(g != g2);
+        REQUIRE(!(g == g2));
+      }
+    }
+    WHEN("Compare g to a modified copy (add edge {1, 1, 0}) of it") {
+      gdwg::Graph<int, int> g2{g};
+      REQUIRE(g2.InsertEdge(1, 1, 0));
+      THEN("They should be not equal") {
+        REQUIRE(g != g2);
+        REQUIRE(!(g == g2));
+      }
+    }
+    WHEN("Compare g to an empty graph") {
+      gdwg::Graph<int, int> g2;
+      THEN("They should be not equal") {
+        REQUIRE(g != g2);
+        REQUIRE(!(g == g2));
+      }
+    }
+  }
+  GIVEN("empty Graph<int, int> g1, g2") {
+    const gdwg::Graph<int, int> g1, g2;
+    WHEN("Compare g1 and g2") {
+      THEN("They should be equal") {
+        REQUIRE(g1 == g2);
+        REQUIRE(!(g1 != g2));
+      }
+    }
+    THEN("Using output stream op") {
+      std::stringstream ss;
+      ss << g1;
+      THEN("Should give empty string") {
+        REQUIRE(ss.str().size() == 0);
+      }
+    }
+  }
+}
 
 SCENARIO("Iterator test") {
   GIVEN("Graph<int, double> with nodes 0, 1, 2, 3 and edges 1 -> 1: 0.5; 1 -> 1: 1.5; 1 -> 2: 0; "
@@ -94,14 +176,10 @@ SCENARIO("Iterator test") {
   GIVEN("Empty const graph g") {
     const gdwg::Graph<int, int> g;
     WHEN("Getting cbegin()") {
-      THEN("Should be the same as cend()") {
-        REQUIRE(g.cbegin() == g.cend());
-      }
+      THEN("Should be the same as cend()") { REQUIRE(g.cbegin() == g.cend()); }
     }
     WHEN("finding edge 1 1 1") {
-      THEN("Should return cend()") {
-        REQUIRE(g.find(1, 1, 1) == g.cend());
-      }
+      THEN("Should return cend()") { REQUIRE(g.find(1, 1, 1) == g.cend()); }
     }
   }
 }
