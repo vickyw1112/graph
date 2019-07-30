@@ -100,7 +100,7 @@ struct gdwg::Graph<N, E>::UniquePointerNodeCompare {
   /* for set transparent comparison */
   bool operator()(const N& lhs, const std::unique_ptr<N>& rhs) const { return lhs < *rhs; }
   bool operator()(const std::unique_ptr<N>& lhs, const N& rhs) const { return *lhs < rhs; }
-  using is_transparent = const N&;
+  using is_transparent = void;
 };
 
 template <typename N, typename E>
@@ -109,7 +109,7 @@ struct gdwg::Graph<N, E>::PointerNodeCompare {
   /* for set transparent comparison */
   bool operator()(const N& lhs, const N* rhs) const { return lhs < *rhs; }
   bool operator()(const N* lhs, const N& rhs) const { return *lhs < rhs; }
-  using is_transparent = const N&;
+  using is_transparent = void;
 };
 
 template <typename N, typename E>
@@ -132,7 +132,7 @@ struct gdwg::Graph<N, E>::ConnectionCompare {
 
   bool operator()(const N& lhs, const Connection& rhs) const { return lhs < *(rhs.first); }
 
-  using is_transparent = const N&;
+  using is_transparent = void;
 };
 
 /* ===== CONSTRUCTOR ===== */

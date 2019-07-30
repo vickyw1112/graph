@@ -3,6 +3,7 @@
 
 #include <iterator>
 #include <map>
+#include <iostream>
 #include <memory>
 #include <set>
 #include <tuple>
@@ -124,6 +125,29 @@ class Graph {
   const_iterator end() { return cend(); }
   const_reverse_iterator rbegin() { return crbegin(); }
   const_reverse_iterator rend() { return crend(); }
+
+  /* operator overloads */
+  friend std::ostream& operator<<(std::ostream& out, const Graph<N, E>& g){
+    for (const auto &pair : g.connections_) {
+      const auto& [fromPtr, connectionSet] = pair;
+      out << *fromPtr << " (\n";
+      for (const auto &connection: connectionSet) {
+        const auto &[toPtr, edgeUniqPtr] = connection;
+        out << "  " << *toPtr << " | " << *edgeUniqPtr << "\n";
+      }
+      out << ")\n";
+    }
+    return out;
+  }
+  friend bool operator==(const Graph<N, E>& l, const Graph<N, E>& r){
+    if(l.GetNodes() != r.GetNodes()) {
+      return false;
+    }
+    return std::equal(l.cbegin(), l.cend(), r.cbegin(), r.cend());
+  }
+  friend bool operator!=(const Graph<N, E>& l, const Graph<N, E>& r){
+    return !(l == r);
+  }
 
  private:
   /**
