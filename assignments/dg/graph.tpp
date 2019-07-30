@@ -355,11 +355,11 @@ std::vector<N> gdwg::Graph<N, E>::GetConnected(const N& src) const {
     throw std::out_of_range("Cannot call Graph::GetConnected if src doesn't exist in the graph");
   }
 
-  N* from = GetNode(src);
+  N* from = (*nodes_.find(src)).get();
   std::vector<N> res;
 
-  for (const auto& pair : connections_[from]) {
-    res.push_back(*(pair.second));
+  for (const auto& pair : connections_.at(from)) {
+    res.push_back(*(pair.first));
   }
 
   return res;
@@ -372,11 +372,12 @@ std::vector<E> gdwg::Graph<N, E>::GetWeights(const N& src, const N& dst) const {
                             "don't exist in the graph");
   }
 
-  N* from = GetNode(src);
-  N* to = GetNode(dst);
+  /* cannot use GetNode since it's not const */
+  N* from = (*nodes_.find(src)).get();
+  N* to = (*nodes_.find(dst)).get();
 
   std::vector<E> res;
-  auto list = this->connections_[from];
+  const auto &list = this->connections_.at(from);
   for (const auto& pair : list) {
     const auto& [currTo, edgePtr] = pair;
     if (currTo == to) {
