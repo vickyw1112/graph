@@ -408,5 +408,10 @@ SCENARIO("test mergereplace method") {
         REQUIRE(b.GetWeights(3, 4) == w3);
       }
     }
+    WHEN("Merge replace 2 with 2") {
+      gdwg::Graph<int, std::string> copy{b};
+      b.MergeReplace(2, 2);
+      THEN("Graph should be the same") { REQUIRE(b == copy); }
+    }
   }
 }

@@ -309,6 +309,9 @@ void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData) {
         "Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
   }
 
+  if (oldData == newData)
+    return;
+
   N* oldNode = GetNode(oldData);
   N* newNode = GetNode(newData);
 
@@ -328,6 +331,8 @@ void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData) {
         /* if no same edge exist, insert it */
         if (connectionSet.find(newEdge) == connectionSet.end()) {
           connectionSet.insert(std::move(newEdge));
+        } else {
+          std::cout << "Edge exists: \n";
         }
 
         /* otherwise, let extracted node go out of scope, and edge gets freed automatically */
