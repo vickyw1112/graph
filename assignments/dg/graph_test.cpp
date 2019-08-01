@@ -244,8 +244,8 @@ SCENARIO("Construct simple graphs") {
     gdwg::Graph<std::string, double> copyG{b};
     std::vector<std::string> s{"hello", "how", "are"};
     sort(s.begin(), s.end());
-    WHEN("copy this graph"){
-      THEN("has all nodes"){
+    WHEN("copy this graph") {
+      THEN("has all nodes") {
         REQUIRE(copyG.GetNodes() == s);
         const std::vector<double> w1{5.4};
         REQUIRE(copyG.GetWeights("hello", "how") == w1);
@@ -253,15 +253,17 @@ SCENARIO("Construct simple graphs") {
         REQUIRE(copyG.GetWeights("how", "are") == w2);
       }
 
-      WHEN("deletea node in copyG"){
+      WHEN("deletea node in copyG") {
         copyG.DeleteNode("hello");
         std::vector<std::string> nodes{"are", "how"};
-        THEN("original graph should have no changes"){
+        THEN("original graph should have no changes") {
           REQUIRE(copyG.GetNodes() == nodes);
           REQUIRE(b.GetNodes() == s);
 
           std::vector<double> w1{5.4};
-          REQUIRE_THROWS_WITH(copyG.GetWeights("hello", "how"), "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
+          REQUIRE_THROWS_WITH(
+              copyG.GetWeights("hello", "how"),
+              "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
           const std::vector<double> w2{7.6};
           REQUIRE(copyG.GetWeights("how", "are") == w2);
 
@@ -272,41 +274,39 @@ SCENARIO("Construct simple graphs") {
   }
 }
 
-SCENARIO("test insert edge method"){
-  GIVEN("a simple graph"){
+SCENARIO("test insert edge method") {
+  GIVEN("a simple graph") {
     int s1 = 1;
-    int s2  = 2;
+    int s2 = 2;
     int s3 = 3;
     auto e1 = std::make_tuple(s1, s2, "A");
     auto e2 = std::make_tuple(s2, s3, "B");
     auto e = std::vector<std::tuple<int, int, std::string>>{e1, e2};
     gdwg::Graph<int, std::string> b{e.begin(), e.end()};
-    WHEN("insert nodes"){
+    WHEN("insert nodes") {
       b.InsertNode(4);
       b.InsertNode(5);
-      THEN("4 , 5 are nodes"){
+      THEN("4 , 5 are nodes") {
         REQUIRE(b.IsNode(4));
         REQUIRE(b.IsNode(5));
       }
     }
-    WHEN("insert edge between an unexist src and dst node"){
-      REQUIRE_THROWS_WITH(b.InsertEdge(4, 5, "A"), "Cannot call Graph::InsertEdge when either src or dst node does not exist");
+    WHEN("insert edge between an unexist src and dst node") {
+      REQUIRE_THROWS_WITH(
+          b.InsertEdge(4, 5, "A"),
+          "Cannot call Graph::InsertEdge when either src or dst node does not exist");
     }
-    WHEN("insert edge A between 1 and 2"){
-      THEN("fail - dup edge"){
-        REQUIRE(!b.InsertEdge(1, 2, "A"));
-      }
+    WHEN("insert edge A between 1 and 2") {
+      THEN("fail - dup edge") { REQUIRE(!b.InsertEdge(1, 2, "A")); }
     }
-    WHEN("insert edge B between 1, 2"){
-      THEN("success"){
-        REQUIRE(b.InsertEdge(1, 2, "B"));
-      }
+    WHEN("insert edge B between 1, 2") {
+      THEN("success") { REQUIRE(b.InsertEdge(1, 2, "B")); }
     }
   }
 }
 
-SCENARIO("test delete node method"){
-  GIVEN("a simple graph"){
+SCENARIO("test delete node method") {
+  GIVEN("a simple graph") {
     int s1 = 1;
     int s2 = 2;
     int s3 = 3;
@@ -317,24 +317,25 @@ SCENARIO("test delete node method"){
     auto e4 = std::make_tuple(s2, s4, "C");
     auto e = std::vector<std::tuple<int, int, std::string>>{e1, e2, e3, e4};
     gdwg::Graph<int, std::string> b{e.begin(), e.end()};
-    WHEN("delete non-exist node"){
-      THEN("false"){
-        REQUIRE(!b.DeleteNode(5));
-      }
+    WHEN("delete non-exist node") {
+      THEN("false") { REQUIRE(!b.DeleteNode(5)); }
     }
-    WHEN("delete node 2"){
+    WHEN("delete node 2") {
       REQUIRE(b.DeleteNode(2));
-      THEN("connections about node 2 should be removed"){
+      THEN("connections about node 2 should be removed") {
         REQUIRE(!b.IsNode(2));
         REQUIRE(b.GetConnected(1).empty());
-        REQUIRE_THROWS_WITH(b.GetWeights(2, 3), "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
-        REQUIRE_THROWS_WITH(b.GetConnected(2), "Cannot call Graph::GetConnected if src doesn't exist in the graph");
+        REQUIRE_THROWS_WITH(
+            b.GetWeights(2, 3),
+            "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
+        REQUIRE_THROWS_WITH(b.GetConnected(2),
+                            "Cannot call Graph::GetConnected if src doesn't exist in the graph");
       }
     }
   }
 }
 
-SCENARIO("test replace method"){
+SCENARIO("test replace method") {
   int s1 = 1;
   int s2 = 2;
   int s3 = 3;
@@ -345,18 +346,17 @@ SCENARIO("test replace method"){
   auto e4 = std::make_tuple(s2, s4, "C");
   auto e = std::vector<std::tuple<int, int, std::string>>{e1, e2, e3, e4};
   gdwg::Graph<int, std::string> b{e.begin(), e.end()};
-  WHEN("Replace a non-exist node"){
-    THEN("throw exception"){
-      REQUIRE_THROWS_WITH(b.Replace(5, 4), "Cannot call Graph::Replace on a node that doesn't exist");
+  WHEN("Replace a non-exist node") {
+    THEN("throw exception") {
+      REQUIRE_THROWS_WITH(b.Replace(5, 4),
+                          "Cannot call Graph::Replace on a node that doesn't exist");
     }
   }
-  WHEN("replace node 2 with 4"){
-    REQUIRE(!b.Replace(2, 4));
-  }
+  WHEN("replace node 2 with 4") { REQUIRE(!b.Replace(2, 4)); }
 
-  WHEN("replace node 2 with 5"){
+  WHEN("replace node 2 with 5") {
     REQUIRE(b.Replace(2, 5));
-    THEN("node 2 becomes 5"){
+    THEN("node 2 becomes 5") {
       REQUIRE(!b.IsNode(2));
       REQUIRE(b.IsNode(5));
       std::vector<int> n{1, 3, 4, 5};
@@ -371,8 +371,8 @@ SCENARIO("test replace method"){
   }
 }
 
-SCENARIO("test mergereplace method"){
-  GIVEN("a simple graph"){
+SCENARIO("test mergereplace method") {
+  GIVEN("a simple graph") {
     int s1 = 1;
     int s2 = 2;
     int s3 = 3;
@@ -384,23 +384,22 @@ SCENARIO("test mergereplace method"){
     auto e = std::vector<std::tuple<int, int, std::string>>{e1, e2, e3, e4};
     gdwg::Graph<int, std::string> b{e.begin(), e.end()};
 
-    WHEN("replacemerge with a non-exist node"){
-      THEN("throw exception"){
-        REQUIRE_THROWS_WITH(b.MergeReplace(2, 5), "Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
+    WHEN("replacemerge with a non-exist node") {
+      THEN("throw exception") {
+        REQUIRE_THROWS_WITH(
+            b.MergeReplace(2, 5),
+            "Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
       }
     }
-    WHEN("replace merge with 3"){
+    WHEN("replace merge with 3") {
       b.MergeReplace(2, 3);
-      THEN("node 2 should be gone"){
-        REQUIRE(!b.IsNode(2));
-      }
-      THEN("all connections belong to 2 should be 3 's"){
+      THEN("node 2 should be gone") { REQUIRE(!b.IsNode(2)); }
+      THEN("all connections belong to 2 should be 3 's") {
         std::vector<int> nodes = {3, 4};
         REQUIRE(b.GetConnected(3) == nodes);
 
         std::vector<std::string> w1{"A"};
         REQUIRE(b.GetWeights(1, 3) == w1);
-
 
         std::vector<std::string> w2{"B"};
         REQUIRE(b.GetWeights(3, 3) == w2);

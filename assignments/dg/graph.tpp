@@ -233,10 +233,8 @@ bool gdwg::Graph<N, E>::DeleteNode(const N& node) {
   /* delete the map entry for all edges from delete node */
   connections_.erase(deleteNodePtr);
 
-  // TODO use transparent find to get first edge with dest being node
-  // then all other edges with dest being node will be immediately after
   /* loop through all the connections to delete edges connected to this node */
-  for (auto &[srcNodePtr, connectionSet] : connections_) {
+  for (auto& [srcNodePtr, connectionSet] : connections_) {
     for (auto connIt = connectionSet.begin(); connIt != connectionSet.end();) {
       const auto& [nodePtr, edgeUniqPtr] = *connIt;
       /* delete edge if dst node is the node we're deleting */
@@ -268,8 +266,8 @@ bool gdwg::Graph<N, E>::Replace(const N& oldData, const N& newData) {
   N* newNode = GetNode(newData);
 
   /* swap old src node to new */
-  auto &connectionSet = connections_[oldNode];
-  for(auto it = connectionSet.begin(); it != connectionSet.end();) {
+  auto& connectionSet = connections_[oldNode];
+  for (auto it = connectionSet.begin(); it != connectionSet.end();) {
     auto nextIt = std::next(it);
 
     /* current iterator it is invalidated */
@@ -283,16 +281,15 @@ bool gdwg::Graph<N, E>::Replace(const N& oldData, const N& newData) {
   /* delete all edges from old */
   connections_.erase(oldNode);
 
-  // TODO optimise same as delete node
   /* loop through the whole set of connections, swap old to new*/
-  for (auto &[srcNodePtr, connectionSet]: connections_) {
+  for (auto& [srcNodePtr, connectionSet] : connections_) {
     for (auto connIt = connectionSet.begin(); connIt != connectionSet.end();) {
       auto nextIt = std::next(connIt);
       /* if destination node is the old node */
       if (connIt->first == oldNode) {
         /* connIt is invalidated by extract */
         auto nodeHanlde = connectionSet.extract(connIt);
-        auto& [destNodePtr, edgeUniqPtr]= nodeHanlde.value();
+        auto& [destNodePtr, edgeUniqPtr] = nodeHanlde.value();
         /* change destination node to be new node */
         connectionSet.insert(std::make_pair(newNode, std::move(edgeUniqPtr)));
       }
@@ -315,9 +312,8 @@ void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData) {
   N* oldNode = GetNode(oldData);
   N* newNode = GetNode(newData);
 
-  // TODO optimise same as delete node
   /* loop through the whole set of connections, change destination node from old to new */
-  for (auto &[srcNodePtr, connectionSet] : connections_) {
+  for (auto& [srcNodePtr, connectionSet] : connections_) {
     for (auto connIt = connectionSet.begin(); connIt != connectionSet.end();) {
       auto nextIt = std::next(connIt);
 
@@ -330,7 +326,7 @@ void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData) {
         /* create temp pair to check if there's a existing edge */
         auto newEdge = make_pair(newNode, std::move(edgeUniqPtr));
         /* if no same edge exist, insert it */
-        if(connectionSet.find(newEdge) == connectionSet.end()) {
+        if (connectionSet.find(newEdge) == connectionSet.end()) {
           connectionSet.insert(std::move(newEdge));
         }
 
@@ -341,20 +337,20 @@ void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData) {
   }
 
   /* connection set for connection from old node */
-  auto &connectionSet = connections_[oldNode];
+  auto& connectionSet = connections_[oldNode];
 
   /* connection set for connection from new Node */
   auto& newConnectionSet = connections_[newNode];
 
   /* change all connections from old node to be from new node */
-  for(auto it = connectionSet.begin(); it != connectionSet.end();) {
+  for (auto it = connectionSet.begin(); it != connectionSet.end();) {
     auto nextIt = std::next(it);
 
     /* current iterator it is invalidated */
     auto nodeHanlde = connectionSet.extract(it);
     auto& connection = nodeHanlde.value();
 
-    if(newConnectionSet.find(connection) == newConnectionSet.end()){
+    if (newConnectionSet.find(connection) == newConnectionSet.end()) {
       /* create new edges from new node */
       newConnectionSet.insert(std::move(connection));
     }
@@ -405,7 +401,7 @@ std::vector<N> gdwg::Graph<N, E>::GetConnected(const N& src) const {
   N* from = (*nodes_.find(src)).get();
   std::vector<N> res;
 
-  auto &connectionSet = connections_.at(from);
+  auto& connectionSet = connections_.at(from);
 
   auto outputIt = std::back_inserter(res);
   auto copyFn = [](const auto& p) { return *(p.first); };
@@ -429,7 +425,7 @@ std::vector<E> gdwg::Graph<N, E>::GetWeights(const N& src, const N& dst) const {
 
   std::vector<E> res;
   bool seenDst = false;
-  const auto &connectionSet = connections_.at(srcNodePtr);
+  const auto& connectionSet = connections_.at(srcNodePtr);
   for (const auto& [currTo, edgeUniqPtr] : connectionSet) {
     if (currTo == dstNodePtr) {
       seenDst = true;

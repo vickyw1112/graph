@@ -97,7 +97,6 @@ class Graph {
   ~Graph() = default;
 
   /* ===== Methods ===== */
-  // TODO check const correctness
   bool InsertNode(const N& node);
   bool InsertEdge(const N& src, const N& dst, const E& w);
   bool DeleteNode(const N& node);
