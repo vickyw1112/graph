@@ -236,9 +236,10 @@ bool gdwg::Graph<N, E>::DeleteNode(const N& node) {
   connections_.erase(deleteNodePtr);
 
   /* loop through all the connections to delete edges connected to this node */
-  for (auto& [srcNodePtr, connectionSet] : connections_) {
+  for (auto& pair : connections_) {
+    auto& connectionSet = pair.second;
     for (auto connIt = connectionSet.begin(); connIt != connectionSet.end();) {
-      const auto& [nodePtr, edgeUniqPtr] = *connIt;
+      const auto& nodePtr = connIt->first;
       /* delete edge if dst node is the node we're deleting */
       if (nodePtr == deleteNodePtr) {
         connIt = connectionSet.erase(connIt); /* connIt is invalidated */
@@ -284,14 +285,16 @@ bool gdwg::Graph<N, E>::Replace(const N& oldData, const N& newData) {
   connections_.erase(oldNode);
 
   /* loop through the whole set of connections, swap old to new*/
-  for (auto& [srcNodePtr, connectionSet] : connections_) {
+  for (auto& pair : connections_) {
+    auto& connectionSet = pair.second;
     for (auto connIt = connectionSet.begin(); connIt != connectionSet.end();) {
       auto nextIt = std::next(connIt);
       /* if destination node is the old node */
       if (connIt->first == oldNode) {
         /* connIt is invalidated by extract */
         auto nodeHanlde = connectionSet.extract(connIt);
-        auto& [destNodePtr, edgeUniqPtr] = nodeHanlde.value();
+        auto& pair = nodeHanlde.value();
+        auto& edgeUniqPtr = pair.second;
         /* change destination node to be new node */
         connectionSet.insert(std::make_pair(newNode, std::move(edgeUniqPtr)));
       }
@@ -318,7 +321,8 @@ void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData) {
   N* newNode = GetNode(newData);
 
   /* loop through the whole set of connections, change destination node from old to new */
-  for (auto& [srcNodePtr, connectionSet] : connections_) {
+  for (auto& pair : connections_) {
+    auto& connectionSet = pair.second;
     for (auto connIt = connectionSet.begin(); connIt != connectionSet.end();) {
       auto nextIt = std::next(connIt);
 
@@ -326,15 +330,14 @@ void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData) {
       if (connIt->first == oldNode) {
         /* connIt is invalidated */
         auto nodeHanlde = connectionSet.extract(connIt);
-        auto& [dstNodePtr, edgeUniqPtr] = nodeHanlde.value();
+        auto& pair = nodeHanlde.value();
+        auto& edgeUniqPtr = pair.second;
 
         /* create temp pair to check if there's a existing edge */
         auto newEdge = make_pair(newNode, std::move(edgeUniqPtr));
         /* if no same edge exist, insert it */
         if (connectionSet.find(newEdge) == connectionSet.end()) {
           connectionSet.insert(std::move(newEdge));
-        } else {
-          std::cout << "Edge exists: \n";
         }
 
         /* otherwise, let extracted node go out of scope, and edge gets freed automatically */
