@@ -13,6 +13,8 @@
 #include <random>
 #include <sstream>
 #include <string>
+#include <tuple>
+#include <vector>
 
 #include "assignments/dg/graph.h"
 #include "catch.h"
