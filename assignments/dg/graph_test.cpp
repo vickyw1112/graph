@@ -416,4 +416,172 @@ SCENARIO("test mergereplace method") {
       THEN("Graph should be the same") { REQUIRE(b == copy); }
     }
   }
+
+  GIVEN("a graph with some dup edge") {
+    int s1 = 1;
+    int s2 = 2;
+    int s3 = 3;
+    int s4 = 4;
+    auto e1 = std::make_tuple(s1, s2, "A");
+    auto e2 = std::make_tuple(s2, s1, "A");
+    auto e3 = std::make_tuple(s2, s3, "B");
+    auto e4 = std::make_tuple(s3, s4, "B");
+    auto e5 = std::make_tuple(s2, s4, "C");
+    auto e6 = std::make_tuple(s4, s3, "B");
+    auto e = std::vector<std::tuple<int, int, std::string>>{e1, e2, e3, e4, e5, e6};
+    gdwg::Graph<int, std::string> b{e.begin(), e.end()};
+
+    WHEN("merge replace 2 with 3") {
+      b.MergeReplace(2, 3);
+      THEN("node 2 should be gone") { REQUIRE(!b.IsNode(2)); }
+      THEN("all connections belong to 2 should be 3's") {
+        std::vector<int> nodes{1, 3, 4};
+        REQUIRE(b.GetConnected(3) == nodes);
+
+        std::vector<std::string> w1{"A"};
+        REQUIRE(b.GetWeights(1, 3) == w1);
+        REQUIRE(b.GetWeights(3, 1) == w1);
+
+        std::vector<std::string> w2{"B"};
+        REQUIRE(b.GetWeights(3, 3) == w2);
+
+        std::vector<std::string> w3{"B", "C"};
+        REQUIRE(b.GetWeights(3, 4) == w3);
+      }
+    }
+  }
+}
+
+SCENARIO("clear method test") {
+  GIVEN("simple graph") {
+    int s1 = 1;
+    int s2 = 2;
+    int s3 = 3;
+    int s4 = 4;
+    auto e1 = std::make_tuple(s1, s2, "A");
+    auto e2 = std::make_tuple(s2, s3, "B");
+    auto e3 = std::make_tuple(s3, s4, "B");
+    auto e4 = std::make_tuple(s2, s4, "C");
+    auto e = std::vector<std::tuple<int, int, std::string>>{e1, e2, e3, e4};
+    gdwg::Graph<int, std::string> b{e.begin(), e.end()};
+    WHEN("clear this graph") {
+      b.Clear();
+      THEN("graph is empty") {
+        REQUIRE(b.GetNodes().size() == 0);
+        REQUIRE_THROWS_WITH(
+            b.GetWeights(1, 2),
+            "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
+        REQUIRE_THROWS_WITH(
+            b.GetWeights(3, 4),
+            "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
+      }
+
+      THEN("add some new nodes and edges") {
+        b.InsertNode(1);
+        b.InsertNode(2);
+        b.InsertNode(3);
+
+        REQUIRE(b.IsNode(1));
+        REQUIRE(b.IsNode(2));
+        REQUIRE(b.IsNode(3));
+
+        b.InsertEdge(2, 1, "A");
+        b.InsertEdge(2, 3, "B");
+        b.InsertEdge(2, 2, "B");
+
+        std::vector<int> nodes{1, 2, 3};
+        REQUIRE(b.GetConnected(2) == nodes);
+
+        std::vector<std::string> w1{"B"};
+        REQUIRE(b.GetWeights(2, 2) == w1);
+        REQUIRE(b.GetWeights(2, 3) == w1);
+      }
+    }
+  }
+}
+
+SCENARIO("copy assignment") {
+  int s1 = 1;
+  int s2 = 2;
+  int s3 = 3;
+  int s4 = 4;
+  auto e1 = std::make_tuple(s2, s1, "A");
+  auto e2 = std::make_tuple(s2, s3, "B");
+  auto e3 = std::make_tuple(s3, s4, "B");
+  auto e4 = std::make_tuple(s2, s4, "C");
+  auto e = std::vector<std::tuple<int, int, std::string>>{e1, e2, e3, e4};
+  gdwg::Graph<int, std::string> b{e.begin(), e.end()};
+  WHEN("copy") {
+    gdwg::Graph<int, std::string> copyb;
+    copyb = b;
+
+    REQUIRE(b.GetNodes() == copyb.GetNodes());
+
+    REQUIRE(b.GetConnected(2) == copyb.GetConnected(2));
+
+    THEN("") {
+      copyb.InsertNode(5);
+      REQUIRE(!b.IsNode(5));
+    }
+  }
+}
+
+SCENARIO("move constructor") {
+  int s1 = 1;
+  int s2 = 2;
+  int s3 = 3;
+  int s4 = 4;
+  auto e1 = std::make_tuple(s2, s1, "A");
+  auto e2 = std::make_tuple(s2, s3, "B");
+  auto e3 = std::make_tuple(s3, s4, "B");
+  auto e4 = std::make_tuple(s2, s4, "C");
+  auto e = std::vector<std::tuple<int, int, std::string>>{e1, e2, e3, e4};
+  gdwg::Graph<int, std::string> b{e.begin(), e.end()};
+
+  WHEN("move b") {
+    gdwg::Graph<int, std::string> moveb{std::move(b)};
+
+    THEN("graph b should be empty") {
+      REQUIRE(b.GetNodes().size() == 0);
+      REQUIRE_THROWS_WITH(
+          b.GetWeights(2, 3),
+          "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
+      REQUIRE(b.cbegin() == b.cend());
+    }
+
+    THEN("graph moveb has all the nodes") {
+      std::vector<int> nodes{1, 2, 3, 4};
+      REQUIRE(moveb.GetNodes() == nodes);
+
+      REQUIRE(moveb.GetWeights(2, 3).at(0) == "B");
+    }
+  }
+}
+
+SCENARIO("move assignment") {
+  int s1 = 1;
+  int s2 = 2;
+  int s3 = 3;
+  int s4 = 4;
+  auto e1 = std::make_tuple(s2, s1, "A");
+  auto e2 = std::make_tuple(s2, s3, "B");
+  auto e3 = std::make_tuple(s3, s4, "B");
+  auto e4 = std::make_tuple(s2, s4, "C");
+  auto e = std::vector<std::tuple<int, int, std::string>>{e1, e2, e3, e4};
+  gdwg::Graph<int, std::string> b{e.begin(), e.end()};
+  WHEN("move assign b") {
+    gdwg::Graph<int, std::string> moveb;
+    moveb = std::move(b);
+
+    THEN("graph b should be empty") {
+      REQUIRE(b.cbegin() == b.cend());
+      REQUIRE(b.GetNodes().size() == 0);
+    }
+    THEN("graph moveb has all the nodes") {
+      std::vector<int> nodes{1, 2, 3, 4};
+      REQUIRE(moveb.GetNodes() == nodes);
+
+      REQUIRE(moveb.GetWeights(2, 3).at(0) == "B");
+    }
+  }
 }

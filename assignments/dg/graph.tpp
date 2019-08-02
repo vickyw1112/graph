@@ -35,13 +35,14 @@ N* gdwg::Graph<N, E>::GetNode(const N& val) {
 /* dereference Iterator */
 template <typename N, typename E>
 typename gdwg::Graph<N, E>::const_iterator::reference gdwg::Graph<N, E>::const_iterator::
-operator*() {
+operator*() noexcept {
   return {*(map_it_->first), *(connection_it_->first), *(connection_it_->second)};
 }
 
 /* pre increment */
 template <typename N, typename E>
-typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::operator++() {
+typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::
+operator++() noexcept {
   ++connection_it_;
   /* check if there is a connection in current incremented connection_it_ */
   while (connection_it_ == map_it_->second.cend()) {
@@ -57,7 +58,8 @@ typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::op
 
 /* post increment */
 template <typename N, typename E>
-typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::operator++(int) {
+typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::
+operator++(int) noexcept {
   const_iterator copy = *this;
   ++*this;
   return copy;
@@ -65,7 +67,8 @@ typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::op
 
 /* pre decrement */
 template <typename N, typename E>
-typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::operator--() {
+typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::
+operator--() noexcept {
   /* if we're at end() */
   if (map_it_ == sentinel_) {
     --map_it_;
@@ -87,7 +90,8 @@ typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::op
 
 /* post decrement */
 template <typename N, typename E>
-typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::operator--(int) {
+typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::
+operator--(int) noexcept {
   const_iterator copy = *this;
   --*this;
   return copy;
@@ -141,7 +145,7 @@ struct gdwg::Graph<N, E>::ConnectionCompare {
 
 template <typename N, typename E>
 gdwg::Graph<N, E>::Graph(typename std::vector<N>::const_iterator start,
-                         typename std::vector<N>::const_iterator end) {
+                         typename std::vector<N>::const_iterator end) noexcept {
   for (auto i = start; i != end; i++) {
     if (!IsNode(*i)) {
       std::unique_ptr<N> newNode = std::make_unique<N>(*i);
@@ -153,7 +157,7 @@ gdwg::Graph<N, E>::Graph(typename std::vector<N>::const_iterator start,
 
 template <typename N, typename E>
 gdwg::Graph<N, E>::Graph(typename std::vector<Edge>::const_iterator start,
-                         typename std::vector<Edge>::const_iterator end) {
+                         typename std::vector<Edge>::const_iterator end) noexcept {
   for (auto i = start; i != end; i++) {
     const auto& [from, to, edge] = *i;
     N* fromNode = GetNode(from);
@@ -163,7 +167,7 @@ gdwg::Graph<N, E>::Graph(typename std::vector<Edge>::const_iterator start,
 }
 
 template <typename N, typename E>
-gdwg::Graph<N, E>::Graph(std::initializer_list<N> list) {
+gdwg::Graph<N, E>::Graph(std::initializer_list<N> list) noexcept {
   for (auto i = list.begin(); i != list.end(); i++) {
     if (!IsNode(*i)) {
       std::unique_ptr<N> newNode = std::make_unique<N>(*i);
@@ -174,7 +178,7 @@ gdwg::Graph<N, E>::Graph(std::initializer_list<N> list) {
 }
 
 template <typename N, typename E>
-gdwg::Graph<N, E>::Graph(const gdwg::Graph<N, E>& old) {
+gdwg::Graph<N, E>::Graph(const gdwg::Graph<N, E>& old) noexcept {
   for (const auto& pair : old.connections_) {
     const auto& [from, connections] = pair;
 
@@ -194,7 +198,7 @@ gdwg::Graph<N, E>::Graph(const gdwg::Graph<N, E>& old) {
 
 /* ===== METHOD ====== */
 template <typename N, typename E>
-bool gdwg::Graph<N, E>::InsertNode(const N& node) {
+bool gdwg::Graph<N, E>::InsertNode(const N& node) noexcept {
   if (IsNode(node))
     return false;
 
@@ -226,7 +230,7 @@ bool gdwg::Graph<N, E>::InsertEdge(const N& src, const N& dst, const E& w) {
 }
 
 template <typename N, typename E>
-bool gdwg::Graph<N, E>::DeleteNode(const N& node) {
+bool gdwg::Graph<N, E>::DeleteNode(const N& node) noexcept {
   if (!IsNode(node)) {
     return false;
   }
@@ -376,7 +380,7 @@ void gdwg::Graph<N, E>::MergeReplace(const N& oldData, const N& newData) {
 }
 
 template <typename N, typename E>
-void gdwg::Graph<N, E>::Clear() {
+void gdwg::Graph<N, E>::Clear() noexcept {
   connections_.clear();
   nodes_.clear();
 }
@@ -394,7 +398,7 @@ bool gdwg::Graph<N, E>::IsConnected(const N& src, const N& dst) const {
 }
 
 template <typename N, typename E>
-std::vector<N> gdwg::Graph<N, E>::GetNodes() const {
+std::vector<N> gdwg::Graph<N, E>::GetNodes() const noexcept {
   std::vector<N> res;
   auto outputIt = std::back_inserter(res);
   auto copyFn = [](const auto& p) { return *(p.first); };
@@ -451,7 +455,7 @@ std::vector<E> gdwg::Graph<N, E>::GetWeights(const N& src, const N& dst) const {
 
 template <typename N, typename E>
 typename gdwg::Graph<N, E>::const_iterator
-gdwg::Graph<N, E>::find(const N& src, const N& dst, const E& w) const {
+gdwg::Graph<N, E>::find(const N& src, const N& dst, const E& w) const noexcept {
   auto mapIt = connections_.find(src);
   if (mapIt == connections_.end())
     return cend();
@@ -468,7 +472,7 @@ gdwg::Graph<N, E>::find(const N& src, const N& dst, const E& w) const {
 }
 
 template <typename N, typename E>
-bool gdwg::Graph<N, E>::erase(const N& src, const N& dst, const E& w) {
+bool gdwg::Graph<N, E>::erase(const N& src, const N& dst, const E& w) noexcept {
   const_iterator it = find(src, dst, w);
   if (it == cend())
     return false;
@@ -478,7 +482,7 @@ bool gdwg::Graph<N, E>::erase(const N& src, const N& dst, const E& w) {
 
 template <typename N, typename E>
 typename gdwg::Graph<N, E>::const_iterator
-gdwg::Graph<N, E>::erase(typename gdwg::Graph<N, E>::const_iterator it) {
+gdwg::Graph<N, E>::erase(typename gdwg::Graph<N, E>::const_iterator it) noexcept {
   if (it == cend())
     return cend();
 
@@ -499,7 +503,7 @@ gdwg::Graph<N, E>::erase(typename gdwg::Graph<N, E>::const_iterator it) {
 }
 
 template <typename N, typename E>
-typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::cbegin() const {
+typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::cbegin() const noexcept {
   auto mapIt = connections_.cbegin();
   if (connections_.cbegin() == connections_.cend()) {
     return cend();
@@ -515,6 +519,26 @@ typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::cbegin() const {
 }
 
 template <typename N, typename E>
-typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::cend() const {
+typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::cend() const noexcept {
   return {connections_.cend(), connections_.cend(), {}};
+}
+template <typename N, typename E>
+gdwg::Graph<N, E>& gdwg::Graph<N, E>::operator=(const gdwg::Graph<N, E>& old) noexcept {
+  this->Clear();
+  for (const auto& pair : old.connections_) {
+    const auto& [from, connections] = pair;
+
+    /* make sure that node is unique */
+    N* fromNode = GetNode(*from);
+
+    for (const auto& connectionPair : connections) {
+      const auto& [toPtr, edgeUniqPtr] = connectionPair;
+
+      N* toNode = GetNode(*toPtr);
+
+      /* insert connections */
+      connections_[fromNode].insert(std::make_pair(toNode, std::make_unique<E>(*edgeUniqPtr)));
+    }
+  }
+  return *this;
 }

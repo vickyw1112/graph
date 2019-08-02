@@ -57,18 +57,18 @@ class Graph {
     using difference_type = int;
     using pointer = value_type*;
 
-    reference operator*();
-    pointer operator->() { return *this; }
-    const_iterator operator++();
-    const_iterator operator++(int);
-    const_iterator operator--();
-    const_iterator operator--(int);
+    reference operator*() noexcept;
+    pointer operator->() noexcept { return *this; }
+    const_iterator operator++() noexcept;
+    const_iterator operator++(int) noexcept;
+    const_iterator operator--() noexcept;
+    const_iterator operator--(int) noexcept;
 
-    friend bool operator==(const const_iterator& lhs, const const_iterator& rhs) {
+    friend bool operator==(const const_iterator& lhs, const const_iterator& rhs) noexcept {
       return lhs.map_it_ == rhs.map_it_ &&
              (lhs.map_it_ == lhs.sentinel_ || lhs.connection_it_ == rhs.connection_it_);
     }
-    friend bool operator!=(const const_iterator& lhs, const const_iterator& rhs) {
+    friend bool operator!=(const const_iterator& lhs, const const_iterator& rhs) noexcept {
       return !(lhs == rhs);
     }
   };
@@ -76,57 +76,63 @@ class Graph {
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
   /* ===== Constructors ===== */
-  Graph() = default;
+  Graph() noexcept = default;
 
   /* node iterator constructor */
-  Graph(typename std::vector<N>::const_iterator start, typename std::vector<N>::const_iterator end);
+  Graph(typename std::vector<N>::const_iterator start,
+        typename std::vector<N>::const_iterator end) noexcept;
 
   /* edge iterator constructor */
   Graph(typename std::vector<Edge>::const_iterator start,
-        typename std::vector<Edge>::const_iterator end);
+        typename std::vector<Edge>::const_iterator end) noexcept;
 
   /* node initializer_list constructor */
-  Graph(std::initializer_list<N> list);
+  Graph(std::initializer_list<N> list) noexcept;
 
   /* copy constructor */
-  explicit Graph(const gdwg::Graph<N, E>& old);
+  explicit Graph(const Graph<N, E>& old) noexcept;
 
   /* move constructor */
-  explicit Graph(gdwg::Graph<N, E>&& old) = default;
+  explicit Graph(Graph<N, E>&& old) noexcept = default;
 
-  ~Graph() = default;
+  ~Graph() noexcept = default;
+
+  /* ===== Operator ====== */
+  Graph<N, E>& operator=(const Graph<N, E>& old) noexcept;
+
+  Graph<N, E>& operator=(Graph<N, E>&& old) noexcept = default;
 
   /* ===== Methods ===== */
-  bool InsertNode(const N& node);
+  bool InsertNode(const N& node) noexcept;
   bool InsertEdge(const N& src, const N& dst, const E& w);
-  bool DeleteNode(const N& node);
+  bool DeleteNode(const N& node) noexcept;
   bool Replace(const N& oldData, const N& newData);
   void MergeReplace(const N& oldData, const N& newData);
-  void Clear();
+  void Clear() noexcept;
 
-  bool IsNode(const N& val) const { return connections_.find(val) != connections_.end(); }
+  bool IsNode(const N& val) const noexcept { return connections_.find(val) != connections_.end(); }
   bool IsConnected(const N& src, const N& dst) const;
 
-  std::vector<N> GetNodes() const;
+  std::vector<N> GetNodes() const noexcept;
   std::vector<N> GetConnected(const N& src) const;
   std::vector<E> GetWeights(const N& src, const N& dst) const;
 
-  const_iterator find(const N& src, const N& dst, const E& w) const;
-  bool erase(const N& src, const N& dst, const E& w);
-  const_iterator erase(const_iterator it);
+  const_iterator find(const N& src, const N& dst, const E& w) const noexcept;
+  bool erase(const N& src, const N& dst, const E& w) noexcept;
+  const_iterator erase(const_iterator it) noexcept;
 
-  const_iterator cbegin() const;
-  const_iterator cend() const;
-  const_reverse_iterator crbegin() const { return const_reverse_iterator{cend()}; }
-  const_reverse_iterator crend() const { return const_reverse_iterator{cbegin()}; }
+  const_iterator cbegin() const noexcept;
+  const_iterator cend() const noexcept;
+  const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator{cend()}; }
+  const_reverse_iterator crend() const noexcept { return const_reverse_iterator{cbegin()}; }
 
-  const_iterator begin() { return cbegin(); }
-  const_iterator end() { return cend(); }
-  const_reverse_iterator rbegin() { return crbegin(); }
-  const_reverse_iterator rend() { return crend(); }
+  const_iterator begin() noexcept { return cbegin(); }
+  const_iterator end() noexcept { return cend(); }
+  const_reverse_iterator rbegin() noexcept { return crbegin(); }
+  const_reverse_iterator rend() noexcept { return crend(); }
 
   /* operator overloads */
-  friend std::ostream& operator<<(std::ostream& out, const Graph<N, E>& g) {
+  friend std::ostream& operator<<(std::ostream& out, const Graph<N, E>& g) noexcept {
     for (const auto& pair : g.connections_) {
       const auto& [fromPtr, connectionSet] = pair;
       out << *fromPtr << " (\n";
@@ -139,14 +145,14 @@ class Graph {
     return out;
   }
 
-  friend bool operator==(const Graph<N, E>& l, const Graph<N, E>& r) {
+  friend bool operator==(const Graph<N, E>& l, const Graph<N, E>& r) noexcept {
     if (l.GetNodes() != r.GetNodes()) {
       return false;
     }
     return std::equal(l.cbegin(), l.cend(), r.cbegin(), r.cend());
   }
 
-  friend bool operator!=(const Graph<N, E>& l, const Graph<N, E>& r) { return !(l == r); }
+  friend bool operator!=(const Graph<N, E>& l, const Graph<N, E>& r) noexcept { return !(l == r); }
 
  private:
   /**
