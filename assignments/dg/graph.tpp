@@ -1,5 +1,3 @@
-#include "assignments/dg/graph.h"
-
 #include <algorithm>
 #include <cassert>
 #include <iostream>
