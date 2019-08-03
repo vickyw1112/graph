@@ -59,7 +59,7 @@ operator++() noexcept {
 /* post increment */
 template <typename N, typename E>
 typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::
-operator++(int) noexcept {
+operator++(int i) noexcept {
   const_iterator copy = *this;
   ++*this;
   return copy;
@@ -91,7 +91,7 @@ operator--() noexcept {
 /* post decrement */
 template <typename N, typename E>
 typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::const_iterator::
-operator--(int) noexcept {
+operator--(int i) noexcept {
   const_iterator copy = *this;
   --*this;
   return copy;
@@ -522,6 +522,7 @@ template <typename N, typename E>
 typename gdwg::Graph<N, E>::const_iterator gdwg::Graph<N, E>::cend() const noexcept {
   return {connections_.cend(), connections_.cend(), {}};
 }
+
 template <typename N, typename E>
 gdwg::Graph<N, E>& gdwg::Graph<N, E>::operator=(const gdwg::Graph<N, E>& old) noexcept {
   this->Clear();

@@ -2,9 +2,10 @@
 
   == Explanation and rational of testing ==
 
-  Explain and justify how you approached testing, the degree
-   to which you're certain you have covered all possibilities,
-   and why you think your tests are that thorough.
+  We've written test for each method of the class
+  covering all possible execution path.
+  We're fairly certain our test covered all possibilities of
+  the code that we implemented.
 
 */
 
@@ -199,16 +200,16 @@ SCENARIO("Construct simple graphs") {
     }
   }
 
-  GIVEN("a list of char nodes") {
+  GIVEN("graph constructed by initializer_list of char nodes") {
     gdwg::Graph<char, std::string> g{'a', 'b', 'x', 'y'};
     THEN("node 'a' should be a node") { REQUIRE(g.IsNode('a')); }
   }
-  GIVEN("a list of string nodes") {
+  GIVEN("graph constructed by a vector of string nodes") {
     std::vector<std::string> v{"hello", "haha"};
     gdwg::Graph<std::string, int> g{v.cbegin(), v.cend()};
     THEN("node 'hello' should be a node") { REQUIRE(g.IsNode("hello")); }
   }
-  GIVEN("a list of nodes with weight") {
+  GIVEN("graph constructed by vector of tuples with weight") {
     std::string s1{"Hello"};
     std::string s2{"how"};
     std::string s3{"are"};
@@ -223,10 +224,10 @@ SCENARIO("Construct simple graphs") {
       REQUIRE(b.IsConnected("Hello", "how"));
       REQUIRE(b.IsConnected("how", "are"));
     }
-    WHEN("insert edge 3 between hello and how") {
+    WHEN("insert edge 3 between hello and how shoud return true") {
       THEN("connection exists") { REQUIRE(b.InsertEdge("Hello", "how", 3)); }
     }
-    WHEN("insert an exists connection") {
+    WHEN("insert an exists connection should return false") {
       b.InsertEdge("Hello", "how", 3);
       THEN("fail") { REQUIRE(!b.InsertEdge("Hello", "how", 3)); }
     }
@@ -235,7 +236,7 @@ SCENARIO("Construct simple graphs") {
       THEN("node Hello should not exist") { REQUIRE(!b.IsNode("Hello")); }
     }
   }
-  GIVEN("simple graaph") {
+  GIVEN("simple graph") {
     std::string s1{"hello"};
     std::string s2{"how"};
     std::string s3{"are"};
@@ -243,10 +244,10 @@ SCENARIO("Construct simple graphs") {
     auto e2 = std::make_tuple(s2, s3, 7.6);
     auto e = std::vector<std::tuple<std::string, std::string, double>>{e1, e2};
     gdwg::Graph<std::string, double> b{e.begin(), e.end()};
-    gdwg::Graph<std::string, double> copyG{b};
-    std::vector<std::string> s{"hello", "how", "are"};
-    sort(s.begin(), s.end());
     WHEN("copy this graph") {
+      gdwg::Graph<std::string, double> copyG{b};
+      std::vector<std::string> s{"hello", "how", "are"};
+      sort(s.begin(), s.end());
       THEN("has all nodes") {
         REQUIRE(copyG.GetNodes() == s);
         const std::vector<double> w1{5.4};
@@ -255,7 +256,7 @@ SCENARIO("Construct simple graphs") {
         REQUIRE(copyG.GetWeights("how", "are") == w2);
       }
 
-      WHEN("deletea node in copyG") {
+      WHEN("delete a node in copyG") {
         copyG.DeleteNode("hello");
         std::vector<std::string> nodes{"are", "how"};
         THEN("original graph should have no changes") {
@@ -285,24 +286,26 @@ SCENARIO("test insert edge method") {
     auto e2 = std::make_tuple(s2, s3, "B");
     auto e = std::vector<std::tuple<int, int, std::string>>{e1, e2};
     gdwg::Graph<int, std::string> b{e.begin(), e.end()};
-    WHEN("insert nodes") {
+    WHEN("insert nodes 4, 5") {
       b.InsertNode(4);
       b.InsertNode(5);
-      THEN("4 , 5 are nodes") {
+      THEN("4, 5 are nodes") {
         REQUIRE(b.IsNode(4));
         REQUIRE(b.IsNode(5));
       }
     }
-    WHEN("insert edge between an unexist src and dst node") {
-      REQUIRE_THROWS_WITH(
-          b.InsertEdge(4, 5, "A"),
-          "Cannot call Graph::InsertEdge when either src or dst node does not exist");
+    WHEN("insert edge between an non-existent src and dst node") {
+      THEN("should throw exception") {
+        REQUIRE_THROWS_WITH(
+            b.InsertEdge(4, 5, "A"),
+            "Cannot call Graph::InsertEdge when either src or dst node does not exist");
+      }
     }
     WHEN("insert edge A between 1 and 2") {
-      THEN("fail - dup edge") { REQUIRE(!b.InsertEdge(1, 2, "A")); }
+      THEN("should fail - duplicated edge") { REQUIRE(!b.InsertEdge(1, 2, "A")); }
     }
     WHEN("insert edge B between 1, 2") {
-      THEN("success") { REQUIRE(b.InsertEdge(1, 2, "B")); }
+      THEN("should succeed") { REQUIRE(b.InsertEdge(1, 2, "B")); }
     }
   }
 }
@@ -319,8 +322,8 @@ SCENARIO("test delete node method") {
     auto e4 = std::make_tuple(s2, s4, "C");
     auto e = std::vector<std::tuple<int, int, std::string>>{e1, e2, e3, e4};
     gdwg::Graph<int, std::string> b{e.begin(), e.end()};
-    WHEN("delete non-exist node") {
-      THEN("false") { REQUIRE(!b.DeleteNode(5)); }
+    WHEN("delete non-existent node") {
+      THEN("should return false") { REQUIRE(!b.DeleteNode(5)); }
     }
     WHEN("delete node 2") {
       REQUIRE(b.DeleteNode(2));
@@ -354,7 +357,9 @@ SCENARIO("test replace method") {
                           "Cannot call Graph::Replace on a node that doesn't exist");
     }
   }
-  WHEN("replace node 2 with 4") { REQUIRE(!b.Replace(2, 4)); }
+  WHEN("replace node 2 with existing node") {
+    THEN("should return false") { REQUIRE(!b.Replace(2, 4)); }
+  }
 
   WHEN("replace node 2 with 5") {
     REQUIRE(b.Replace(2, 5));
@@ -417,7 +422,7 @@ SCENARIO("test mergereplace method") {
     }
   }
 
-  GIVEN("a graph with some dup edge") {
+  GIVEN("a graph which after MergeReplace would have some dup edge") {
     int s1 = 1;
     int s2 = 2;
     int s3 = 3;
@@ -511,15 +516,13 @@ SCENARIO("copy assignment") {
   auto e4 = std::make_tuple(s2, s4, "C");
   auto e = std::vector<std::tuple<int, int, std::string>>{e1, e2, e3, e4};
   gdwg::Graph<int, std::string> b{e.begin(), e.end()};
-  WHEN("copy") {
+  WHEN("copy assign graph") {
     gdwg::Graph<int, std::string> copyb;
     copyb = b;
 
-    REQUIRE(b.GetNodes() == copyb.GetNodes());
+    THEN("copy should be the same") {
+      REQUIRE(copyb == b);
 
-    REQUIRE(b.GetConnected(2) == copyb.GetConnected(2));
-
-    THEN("") {
       copyb.InsertNode(5);
       REQUIRE(!b.IsNode(5));
     }
